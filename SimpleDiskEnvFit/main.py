@@ -4,8 +4,8 @@
 # The code heavily relies on radmc3dPy package by Attila Juhasz:
 # (https://www.ast.cam.ac.uk/~juhasz/radmc3dPyDoc/index.html)
 #
-# Original SimpleDisk source available at:
-# https://gitlab.mpcdf.mpg.de/szucs/SimpleDisk
+# Original SimpleDiskEnvFit source available at:
+# https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnvFit
 #  
 # Copyright (C) 2019 Laszlo Szucs <laszlo.szucs@mpe.mpg.de>
 #
@@ -250,10 +250,8 @@ class radmc3dModel:
             rhodust[:,:,:,0] = rho_disk_dust[:,:,:,0]
             rhodust[:,:,:,1] = rho_env_dust[:,:,:,0]
             self.data.rhodust = rhodust
-            self.opac_files = self.opac_files[0:2]
         else:
             self.data.rhodust = rho_env_dust + rho_disk_dust
-            self.opac_files = self.opac_files[0]
         
         return 0
         
@@ -551,6 +549,10 @@ class radmc3dModel:
             for ip in impar:
                 img = self.rrun.getImage(**ip)
                 self.image.append(img)
+                
+        else:
+            # TODO: Workaround to wait until mctherm is finished: 
+            img = self.rrun.getImage(**{'npix':50,'wav':1000.})
 
         # Compute SED(s) if needed
         #
@@ -743,8 +745,7 @@ class radmc3dModel:
                 self.opac.phase_g.append( opac_tmp['gscat'] )
                 self.opac.idust.append( i )
                 
-                self.opac.ext.append( "ag_{:06.2}".format( opac_tmp['agraincm'] 
-                                                       * 1.0e4 ) )
+                self.opac.ext.append( "ag_{:06.2}".format( agr * 1.0e4 ) )
                 
             self.opac_files = self.opac.ext
                 
@@ -774,10 +775,13 @@ def getParams(paramfile=None):
         modpar.readPar(fname=paramfile)
     else:
         # Set radmc3dPy default
-        modpar.loadDefaults()
+        #modpar.loadDefaults()
         # Set SimpleDiskEnv defaults
 
         # Radiation sources
+        modpar.setPar(['pstar','[0.0, 0.0, 0.0]', 
+                       ' Position of the star(s) (cartesian coordinates)', 
+                       'Radiation sources'])
         modpar.setPar(['mstar', '[3.0*ms]', 
                        ' Mass of the star(s)', 
                        'Radiation sources'])
@@ -816,20 +820,19 @@ def getParams(paramfile=None):
         modpar.setPar(['zbound', '[0.0, 2.0*pi]', 
                        ' Boundraries for the z grid', 
                        'Grid parameters'])
+        modpar.setPar(['nw', '[50, 150, 100]', ' Number of points in the \
+                       wavelength grid', 'Grid parameters'])
+        modpar.setPar(['wbound', '[0.1, 7.0, 25.0, 1e4]', 
+                       ' Boundaries for the wavelength grid', 
+                       'Grid parameters'])
 
         # Dust opacity
-        modpar.setPar(['lnk_fname', "['./lnk/mix_compact_bruggeman.lnk']", 
-                       ' ', 'Dust opacity'])
-        modpar.setPar(['gdens', '[1.8]', 
+        modpar.setPar(['lnk_fname', '"astro_sill_draine2003.lnk"', ' ', 
+                       'Dust opacity'])
+        modpar.setPar(['gdens', '3.5', 
                        ' Bulk density of the materials in g/cm^3', 'Dust opacity'])
-        modpar.setPar(['gsmin', '0.1', ' Minimum grain size', 'Dust opacity'])
-        modpar.setPar(['gsmax', '10.0', ' Maximum grain size', 'Dust opacity'])
-        modpar.setPar(['ngs', '10', ' Number of grain sizes', 'Dust opacity'])
-        modpar.setPar(['gsdist_powex', '-3.5', 
-                       ' Grain size distribution power exponent', 'Dust opacity'])
-        modpar.setPar(['mixabun', '[1.0]', 
-                       ' Mass fractions of the dust components to be mixed', 'Dust opacity'])
-        modpar.setPar(['dustkappa_ext',"['silicate']", ' ', 'Dust opacity'])
+        modpar.setPar(['agraincm', '1.0e-5', ' Grain size [cm]', 'Dust opacity'])
+        modpar.setPar(['ngs', '1', ' Number of grain populations', 'Dust opacity'])
 
         # Code parameters
         modpar.setPar(['scattering_mode_max', '0', 

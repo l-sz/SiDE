@@ -1,15 +1,30 @@
+# 
+# Code to set up a simple RADMC-3D disk models with envelope
+#
+# The code heavily relies on radmc3dPy package by Attila Juhasz:
+# (https://www.ast.cam.ac.uk/~juhasz/radmc3dPyDoc/index.html)
+#
+# Original SimpleDiskEnvFit source available at:
+# https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnvFit
+#  
+# Copyright (C) 2019 Laszlo Szucs <laszlo.szucs@mpe.mpg.de>
+#
+# Licensed under GLPv2, for more information see the LICENSE file repository.
+#
+
+from __future__ import absolute_import
+from __future__ import print_function
+
 import subprocess
 import numpy as np
 import radmc3dPy
 import os
 
-'''
-The radmc3dRunner class provides a subprocess to compute dust temperature and 
-dust continuum emission maps in the current folder.
-'''
-
 class radmc3dRunner:
-    
+    '''
+    The radmc3dRunner class provides a subprocess to compute dust temperature and 
+    dust continuum emission maps in the current folder.
+    '''
     radmc3dexec = 'radmc3d'   # use the system resolver
     folder = None
     proc = None

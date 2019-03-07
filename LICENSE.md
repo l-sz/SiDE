@@ -1,8 +1,8 @@
 
  This file is part of the SimpleDisk project.
- https://gitlab.mpcdf.mpg.de/szucs/SimpleDisk
+ https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnvFit
  
- Copyright (C) 2018 Laszlo Szucs <laszlo.szucs@mpe.mpg.de>
+ Copyright (C) 2019 Laszlo Szucs <laszlo.szucs@mpe.mpg.de>
  
  This program is free software; you can redistribute it and/or
  modify it under the terms of the GNU General Public License as

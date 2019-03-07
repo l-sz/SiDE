@@ -59,29 +59,54 @@ After completing this step, the module should be available in python:
 Basic usage:
 -----------
 
+Load default parameter configuration (disk and envelope included, no cavity) and 
+modify the disk mass and radius and the envelope reference density.
 ```
+>>> import SimpleDiskEnvFit
+>>> import numpy as np
+
 >>> par = SimpleDiskEnvFit.getParam()
 
 >>> par.setPar(['mdisk', '0.01*ms', ' Disk mass', 'Disk parameters'])
 >>> par.setPar(['rdisk', '100.*au', ' Disk radius', 'Disk parameters'])
 >>> par.setPar(['rho0Env', '1e-20', ' Envelope reference density [g/cm^3]', 'Envelope parameters'])
+```
 
+Create the radmc3dModel object and print model information (included components, 
+component masses, densities, etc.). Then write the model to current folder (note 
+that files need to be written to hard drive before the dust temperature and 
+images are computed).
+```
 >>> mod = SimpleDiskEnvFit.radmc3dModel(modpar=par, main_dir='../opacities/')
+>>> mod.infoModelParams()
 >>> mod.write2folder()
+```
 
->>> impar = [{'npix':512,'wav':1100.,'sizeau':6000,'incl':60},
-             {'npix':512,'wav':3000.,'sizeau':6000,'incl':60}]
-             
->>> mod.runModel(mctherm=True,impar=impar)
-
+Read observed visibility data (obtained at 1.1 and 3 mm wavelength) and set 
+image parameters.
+```
 >>> u1, v1, Re1, Im1, w1 = np.loadtxt('Elias29uvt_270.txt', unpack=True)
 >>> u2, v2, Re2, Im2, w2 = np.loadtxt('Elias29uvt_94.txt', unpack=True)
 
 >>> vis = [{'u':u1, 'v':v1, 'Re':Re1, 'Im':Im1, 'w':w1, 'wav':1100.},
            {'u':u2, 'v':v2, 'Re':Re2, 'Im':Im2, 'w':w2, 'wav':3000.}]
-        
->>> mod.getVis(uvdata=vis, dpc=125.)
+           
+>>> impar = [{'npix':512,'wav':1100.,'sizeau':6000,'incl':60},
+             {'npix':512,'wav':3000.,'sizeau':6000,'incl':60}]
+```
 
+Compute the dust temperature and the dust continuum emission. Then decompose the 
+images to complex visibility space. The computed images are stored in the mod.image 
+class variable (list type). The individual images are radmc3dImage objects. It is 
+possible to use the standard radmc3dPy methods on the images (e.g. to write to fits 
+file format).
+```
+>>> mod.runModel(mctherm=True,impar=impar)
+>>> mod.getVis(uvdata=vis, dpc=125.)
+```
+
+Finally, compare the observed and modelled visibilities.
+```
 >>> uvbin = 10000
 >>> ax0 = mod.vis_inp[0].plot(uvbin_size=uvbin)
 >>> mod.vis_mod[0].plot(uvbin_size=uvbin, axis=ax0, linestyle='r-')

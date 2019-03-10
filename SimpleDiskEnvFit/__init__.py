@@ -10,10 +10,11 @@ from SimpleDiskEnvFit import models
 from SimpleDiskEnvFit import main
 from SimpleDiskEnvFit import runner
 from SimpleDiskEnvFit import ulrich_envelope
-from SimpleDiskEnvFit import fitting
+from SimpleDiskEnvFit import bayes
 
 from SimpleDiskEnvFit.main import radmc3dModel, getParams
 from SimpleDiskEnvFit.runner import radmc3dRunner
 
 __version__ = "1.0"
-__all__ =  ["radmc3dModel","getParams","radmc3dRunner","fitting"]
+__all__ =  ["radmc3dModel","getParams","radmc3dRunner","bayes",
+            "models",'main','runner']

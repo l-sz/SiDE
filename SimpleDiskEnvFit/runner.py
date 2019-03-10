@@ -31,12 +31,18 @@ class radmc3dRunner:
     cpu_nr = 0
     cpu_us = 0
     pid = 0
+    ID = None
     
     def __init__(self, folder='.', bufsize=500000, nthreads=1, 
-                 radmc3dexec=None):
+                 radmc3dexec=None, ID=None):
         '''
         Initializes RADMC3D child process and subprocess handlers.
         '''
+        if ID is None:
+            self.ID = np.random.randint(0,99999)
+        else:
+            self.ID = ID
+        
         if radmc3dexec:
             self.radmc3dexec = radmc3dexec
         
@@ -59,7 +65,7 @@ class radmc3dRunner:
         
         return None
 
-    def terminate(self):
+    def terminate(self, verbose=False):
         '''
         Terminate child process and close pipes.
         '''
@@ -71,12 +77,19 @@ class radmc3dRunner:
         self.proc.wait()
         
         if self.proc.poll() < 0:
-            print('INFO: process PID {} terminated'.format(self.pid))
+            done = True
+        else:
+            done = False
+            
+        if (done and verbose):
+            print('INFO [{:06}]: process PID {} terminated'.format(self.ID,
+                                                                   self.pid))
             
         return 0
     
     def runMCtherm(self, noscat=None, nphot_therm=None, 
-                    nphot_scat=None, nphot_mcmono=None):
+                    nphot_scat=None, nphot_mcmono=None, 
+                    verbose=False):
         '''
         Send instruction to RADCM3D child process to compute dust temperature.
         
@@ -96,7 +109,8 @@ class radmc3dRunner:
                          simulation.
         '''
         current_dir = os.path.realpath('.')
-        print('INFO: process PID {} started\n@ {}'.format(self.pid,current_dir))
+        if verbose:
+            print('INFO [{:06}]: process PID {} started at: \n     {}'.format(self.ID, self.pid,current_dir))
         
         self.proc.stdin.write(b"mctherm\n")
         
@@ -112,10 +126,15 @@ class radmc3dRunner:
             self.proc.stdin.write(b"nphot_mcmono\n")
             self.proc.stdin.write(str.encode("{}\n".format(str(int(nphot_mcmono)))))
                                   
+        self.proc.stdin.write(b"respondwhenready\n")
+                                  
         self.proc.stdin.write(b"enter\n")
         self.proc.stdin.flush()
         
         # should wait until it runs
+        stat = self.proc.stdout.readline()
+        if verbose:
+            print ('INFO [{:06}]: Thermal MC run done!'.format(self.ID))
         
         return 0
         
@@ -147,7 +166,8 @@ class radmc3dRunner:
             self.proc.stdin.write(b"lambda\n")
             self.proc.stdin.write(str.encode("{}\n".format(str(wav))))
         else:
-            print("ERROR: no wavelength parameter set in run_image()!")
+            print("ERROR [{:06}]: no wavelength parameter \
+                  set in run_image()!".format(self.ID))
             return -1
         if sizeau:
             self.proc.stdin.write(b"sizeau\n")

@@ -38,6 +38,8 @@ class radmc3dModel:
     routines should be added in the future.
     '''
     
+    ID = None
+    
     # radmc3dPy objects
     modpar = None
     grid = None
@@ -73,7 +75,7 @@ class radmc3dModel:
     
     def __init__(self, modpar=None, folder=None, verbose=False,
                  idisk=True, ienv=True, icav=False, iext=False,
-                 main_dir='../', write2folder=False):
+                 main_dir='../', write2folder=False, ID=None):
         '''
         
         If folder parameter is set then it overwrites the value specified in 
@@ -82,6 +84,12 @@ class radmc3dModel:
         nor in modpar, then default to '.' current folder (using absolute path).
         
         '''
+        # Set model ID
+        if ID is None:
+            self.ID = np.random.randint(0,99999)
+        else:
+            self.ID = ID
+        
         # Create empty model
         self.grid = radmc3dPy.analyze.radmc3dGrid()
         self.data = radmc3dPy.analyze.radmc3dData(self.grid)
@@ -137,8 +145,6 @@ class radmc3dModel:
         
         # Write data to run folder
         if write2folder:
-            if not os.path.isdir(self.folder):
-                os.makedirs(self.folder)
             self.write2folder()
         
         # Write out model parameters
@@ -155,7 +161,7 @@ class radmc3dModel:
         ----------
           folder  -  string, path to model to be read
         '''
-        print ('INFO: This function is not implemented yet!')
+        print ('INFO [{:06}]: This function is not implemented yet!'.format(ID))
         
         return 0
 
@@ -263,7 +269,7 @@ class radmc3dModel:
         ----------
           fname  -  string, name of output file (default external_source.inp)
         '''
-        print('Writing {}'.format(fname))
+        print('INFO [{:06}]: Writing {}'.format(self.ID, fname))
         
         wfile = open(fname, 'w')
         wfile.write('%d\n'%2)     # this is the format, should be 2 always
@@ -333,6 +339,10 @@ class radmc3dModel:
                           folder.
         '''
         current_dir = os.path.realpath('.')
+
+        # Create folder if necessary
+        if not os.path.isdir(self.folder):
+            os.makedirs(self.folder)
         os.chdir(self.folder)
         
         # Frequency grid
@@ -356,17 +366,20 @@ class radmc3dModel:
                              scattering_mode_max=
                              self.modpar.ppar['scattering_mode_max'], 
                              old=False)
-        
-        # Write opacity if it was computed 
-        self.writeOpac()
-        # Copy opacity files if they are specified in parameters
-        self.copyOpac(path=self.main_dir)
-        
+                
         # if parameter file doesn't exist write as well.
         if (not os.path.isfile('problem_params.inp')) or write_param:
             self.modpar.writeParfile('problem_params.inp')
         
         os.chdir(current_dir)
+        
+        #
+        # The following methods take care of finding self.folder themselves
+        #
+        # Write opacity if it was computed 
+        self.writeOpac()
+        # Copy opacity files if they are specified in parameters
+        self.copyOpac(path=self.main_dir)
         
         return 0
     
@@ -378,6 +391,7 @@ class radmc3dModel:
         ppar = self.modpar.ppar
     
         # Stellar properties:
+        print ("\nINFO [{:06}]: Model parameters\n".format(self.ID))
         print("\nStellar properties:\n")
         print(" T_star = {:.2f} K".format(ppar['tstar'][0]))
         print(" R_star = {:.2f} Rsol = {:.2f} AU".format(ppar['rstar'][0]/nc.rs, 
@@ -490,7 +504,7 @@ class radmc3dModel:
                     try:
                         copyfile("{}/{}".format(path,fname), "./{}".format(fname) )
                     except:
-                        print( "ERROR (copyOpac): failed to copy {}".format(fname) )
+                        print( "ERROR [{:06}] : copyOpac(): failed to copy {}".format(self.ID, fname) )
 
         else:
             # Nothing to do
@@ -510,7 +524,7 @@ class radmc3dModel:
             ngs = self.modpar.ppar['ngs']
             
             for i in range(ngs):
-                print ('Writing dustkappa_{}.inp'.format(self.opac_files[i]))
+                print ('INFO [{:06}]: Writing dustkappa_{}.inp'.format(self.ID, self.opac_files[i]))
                 self.opac.writeOpac(ext=self.opac_files[i], idust=i)
         
         os.chdir(current_dir)
@@ -519,7 +533,7 @@ class radmc3dModel:
         
     def runModel(self, folder='.', bufsize=500000, nthreads=1, radmc3dexec=None,
                  mctherm=True, noscat=None, nphot_therm=None, nphot_scat=None,
-                 nphot_mcmono=None, impar=None):
+                 nphot_mcmono=None, impar=None, verbose=False):
         '''
         Run Monte Carlo dust radiation transport to determine dust temperature 
         and / or compute image according impar dictionary.
@@ -529,14 +543,16 @@ class radmc3dModel:
         
         # Initialize radmc3dRunner
         self.rrun = runner.radmc3dRunner(folder=self.folder, bufsize=500000,
-                                         nthreads=1, radmc3dexec=None)
+                                         nthreads=1, radmc3dexec=None, 
+                                         ID=self.ID)
         
         # Compute dust temperature
         if mctherm:
             self.rrun.runMCtherm(noscat=noscat, 
                                  nphot_therm=nphot_therm,
                                  nphot_scat=nphot_scat, 
-                                 nphot_mcmono=nphot_mcmono)
+                                 nphot_mcmono=nphot_mcmono,
+                                 verbose=verbose)
         
         # Compute image(s)
         if impar is not None:
@@ -549,17 +565,13 @@ class radmc3dModel:
             for ip in impar:
                 img = self.rrun.getImage(**ip)
                 self.image.append(img)
-                
-        else:
-            # TODO: Workaround to wait until mctherm is finished: 
-            img = self.rrun.getImage(**{'npix':50,'wav':1000.})
 
         # Compute SED(s) if needed
         #
         #
 
         # Terminate radmc3dRunner
-        self.rrun.terminate()
+        self.rrun.terminate(verbose=verbose)
         
         # Read dust temperature
         binary = False
@@ -587,7 +599,7 @@ class radmc3dModel:
         
         if self.image is None:
             
-            print ("INFO: No images stored in object!") 
+            print ("WARN [{:06}]: No images stored in object!".format(self.ID)) 
             pass
             
         else:
@@ -613,7 +625,8 @@ class radmc3dModel:
                 try:
                     iim = wav_arr.index(wav)
                 except:
-                    print ('{} micron image not found, continue...'.format(wav))
+                    print ('WARN [{:06}]: micron image not found,\
+                           continue...'.format(self.ID, wav))
                     continue
                 
                 if self.vis_mod is None:
@@ -643,8 +656,6 @@ class radmc3dModel:
                                                   Re, Im, w )
                 self.chi2.append(chi2)
 
-            print ('Done')
-
         return 0
     
     def cleanModel(self):
@@ -659,7 +670,7 @@ class radmc3dModel:
             rmtree(self.folder)
         
         else:
-            print("Folder cannot be deleted!")
+            print("WARN [{:06}]: Folder cannot be deleted!".format(self.ID))
 
         os.chdir(current_dir)
         
@@ -694,8 +705,8 @@ class radmc3dModel:
                     matdens = [matdens]
             else:
                 matdens = [3.0]
-                print ("WARN: gdens not defined in parameter file, \
-                        using {:.2} g/cm^3".format(matdens[0]))
+                print ("WARN [{:06}]: gdens not defined in parameter file, \
+                        using {:.2} g/cm^3".format(self.ID, matdens[0]))
                 
             if 'agraincm' in par.keys():
                 agraincm = par['agraincm']
@@ -703,8 +714,8 @@ class radmc3dModel:
                     agraincm = [agraincm]
             else:
                 agraincm = [0.1 * 1.0e-4] # 0.1 micron converted to cm
-                print ("WARN: agraincm not defined in parameter file, \
-                           using {:.2} cm".format(agraincm[0]))
+                print ("WARN [{:06}]: agraincm not defined in parameter file, \
+                           using {:.2} cm".format(self.ID, agraincm[0]))
             
             n_lnk = len(lnk_fname)
             n_mat = len(matdens)

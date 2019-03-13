@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import SimpleDiskEnvFit.main as main
+import radmc3dPy.natconst as nc
 
 import numpy as np
 import os
@@ -33,7 +34,7 @@ def lnpriorfn(p, par_ranges):
 
     return jacob
 
-def lnpostfn(p, p_ranges, parname, partype, ppar, main_dir, visdata, 
+def lnpostfn(p, p_ranges, parname, ppar, main_dir, visdata, 
              dpc=1.0, incl=45., impar=None, verbose=False):
     """
     Log of posterior probability function
@@ -52,11 +53,15 @@ def lnpostfn(p, p_ranges, parname, partype, ppar, main_dir, visdata,
     # Update parameters
     for i in range(len(parname)):
         
-        if partype[i] == 'log':
-            val = 10.0**p[i]
+        # Special cases
+        if parname[i] == 'mdisk':
+            val = 10.0**p[i] * nc.ms
+        elif parname[i] == 'rdisk':
+            val = p[i] * nc.au
         else:
             val = p[i]
         
+        # Set the model parameters
         if parname[i] in ppar.ppar.keys():
             ppar.setPar([parname[i], "{:10.6E}".format(val)])
                 
@@ -71,7 +76,7 @@ def lnpostfn(p, p_ranges, parname, partype, ppar, main_dir, visdata,
         if verbose:
             print ("INFO [{:06}]: {:s} is set to {}".format(rand,
                                                             parname[i],
-                                                            10.0**p[i]))
+                                                            val))
     
     # Generate model folder name
     folder = "{}/mod_".format('.')

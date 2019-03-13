@@ -33,8 +33,8 @@ def lnpriorfn(p, par_ranges):
 
     return jacob
 
-def lnpostfn(p, p_ranges, parname, ppar, main_dir, visdata, dpc=1.0, incl=45.,
-             impar=None, verbose=False):
+def lnpostfn(p, p_ranges, parname, partype, ppar, main_dir, visdata, 
+             dpc=1.0, incl=45., impar=None, verbose=False):
     """
     Log of posterior probability function
     """
@@ -52,12 +52,18 @@ def lnpostfn(p, p_ranges, parname, ppar, main_dir, visdata, dpc=1.0, incl=45.,
     # Update parameters
     for i in range(len(parname)):
         
+        if partype[i] == 'log':
+            val = 10.0**p[i]
+        else:
+            val = p[i]
+        
         if parname[i] in ppar.ppar.keys():
-            ppar.setPar([parname[i], "{:10.6E}".format(10.0**p[i])])
+            ppar.setPar([parname[i], "{:10.6E}".format(val)])
+                
         elif parname[i] == 'dpc':
-            dpc = 10.0**p[i]
+            dpc = val
         elif parname[i] == 'incl':
-            incl = 10.0**p[i]
+            incl = val
         else:
             raise ValueError('ERROR [lnpostfn]: unknown \
                 parameter [{}]'.format(parname[i]))

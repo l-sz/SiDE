@@ -56,6 +56,8 @@ def lnpostfn(p, p_ranges, parname, ppar, main_dir, visdata,
         # Special cases
         if parname[i] == 'mdisk':
             val = 10.0**p[i] * nc.ms
+        elif parname[i] == 'rho0Env':
+            val = 10**p[i]
         elif parname[i] == 'rdisk':
             val = p[i] * nc.au
         else:

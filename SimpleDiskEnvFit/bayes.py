@@ -60,13 +60,22 @@ def lnpostfn(p, p_ranges, parname, ppar, main_dir, visdata,
             val = 10**p[i]
         elif parname[i] == 'rdisk':
             val = p[i] * nc.au
+        elif parname[i][0:6] == 'agrain':
+            val = 10.0**p[i]
         else:
             val = p[i]
         
         # Set the model parameters
         if parname[i] in ppar.ppar.keys():
             ppar.setPar([parname[i], "{:10.6E}".format(val)])
-                
+        elif parname[i] =='agrain_env':
+            tmp = ppar.ppar['agraincm']
+            tmp[1] = val
+            ppar.setPar(['agraincm', "{}".format(tmp)])
+        elif parname[i] =='agrain_disk':
+            tmp = ppar.ppar['agraincm']
+            tmp[0] = val
+            ppar.setPar(['agraincm', "{}".format(tmp)])
         elif parname[i] == 'dpc':
             dpc = val
         elif parname[i] == 'incl':

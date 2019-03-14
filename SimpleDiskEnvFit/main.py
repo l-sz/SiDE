@@ -584,7 +584,7 @@ class radmc3dModel:
         
         return 0
         
-    def getVis(self, uvdata, dpc=1.0):
+    def getVis(self, uvdata, dpc=1.0, PA=0., dRA=0.0, dDec=0.0):
         '''
         Compute visibility of previously computed images and their chi2 
         compared to observations, using the Galario library.
@@ -653,7 +653,8 @@ class radmc3dModel:
                                         columns=uvplot.COLUMNS_V0) )
 
                 chi2 = galario.double.chi2Image( imJyppix, dxy, u/wle, v/wle, 
-                                                  Re, Im, w )
+                                                  Re, Im, w, dRA=dRA, dDec=dDec,
+                                                  PA=PA )
                 self.chi2.append(chi2)
 
         return 0

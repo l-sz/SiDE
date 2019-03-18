@@ -17,6 +17,7 @@ from __future__ import print_function
 
 import SimpleDiskEnvFit.main as main
 import radmc3dPy.natconst as nc
+from galario import deg, arcsec
 
 import numpy as np
 import os
@@ -34,10 +35,13 @@ def lnpriorfn(p, par_ranges):
 
     return jacob
 
-def lnpostfn(p, p_ranges, parname, ppar, main_dir, visdata, 
-             dpc=1.0, incl=45., impar=None, verbose=False):
+def lnpostfn(p, p_ranges, parname, ppar, main_dir, 
+             dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0,
+             impar=None, verbose=False):
     """
     Log of posterior probability function
+    
+    Note: visdata is a global variable defined in the script calling lnpostfn()
     """
     # Model ID
     rand = np.random.randint(0,99999)
@@ -80,6 +84,12 @@ def lnpostfn(p, p_ranges, parname, ppar, main_dir, visdata,
             dpc = val
         elif parname[i] == 'incl':
             incl = val
+        elif parname[i] == 'PA':
+            PA = val * deg
+        elif parname[i] == 'dRA':
+            dRA = val * arcsec
+        elif parname[i] == 'dDec':
+            dDec = val * arcsec
         else:
             raise ValueError('ERROR [lnpostfn]: unknown \
                 parameter [{}]'.format(parname[i]))
@@ -128,7 +138,7 @@ def lnpostfn(p, p_ranges, parname, ppar, main_dir, visdata,
         dpc_vis = impar[0]['dpc']
     else:
         dpc_vis = impar['dpc']
-    mod.getVis(visdata, dpc=dpc_vis)
+    mod.getVis(visdata, dpc=dpc_vis, PA=PA, dRA=dRA, dDec=dDec)
 
     chi2 = -0.5 * np.sum(mod.chi2) + lnprior
     

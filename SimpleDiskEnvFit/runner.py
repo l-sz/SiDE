@@ -20,6 +20,8 @@ import numpy as np
 import radmc3dPy
 import os
 
+__all__ = ['radmc3dRunner']
+
 class radmc3dRunner:
     '''
     The radmc3dRunner class provides a subprocess to compute dust temperature and 

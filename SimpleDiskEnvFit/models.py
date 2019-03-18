@@ -21,7 +21,7 @@ import numpy as np
 import radmc3dPy
 
 # Internal routines
-import SimpleDiskEnvFit.ulrich_envelope as uenv
+from . import ulrich_envelope as uenv
 
 def ulrich_envelope(grid, ppar, cavity=False):
     '''

@@ -24,11 +24,13 @@ import radmc3dPy
 import radmc3dPy.natconst as nc
 
 # Internal routines
-import SimpleDiskEnvFit.models as models
-import SimpleDiskEnvFit.runner as runner
+from . import models
+from . import runner
 
 import galario
 import uvplot
+
+__all__ = ['radmc3dModel','getParams']
 
 class radmc3dModel:
     '''

@@ -15,7 +15,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import SimpleDiskEnvFit.main as main
+from . import main
 import radmc3dPy.natconst as nc
 from galario import deg, arcsec
 
@@ -35,7 +35,7 @@ def lnpriorfn(p, par_ranges):
 
     return jacob
 
-def lnpostfn(p, p_ranges, parname, ppar, main_dir, 
+def lnpostfn(p, p_ranges, parname, ppar, main_dir, visdata,
              dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0,
              impar=None, verbose=False):
     """

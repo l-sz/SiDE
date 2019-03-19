@@ -28,14 +28,14 @@ class radmc3dRunner:
     dust continuum emission maps in the current folder.
     '''
     radmc3dexec = 'radmc3d'   # use the system resolver
-    folder = None
+    model_dir = None
     proc = None
     cpu_nr = 0
     cpu_us = 0
     pid = 0
     ID = None
     
-    def __init__(self, folder='.', bufsize=500000, nthreads=1, 
+    def __init__(self, model_dir='.', bufsize=500000, nthreads=1, 
                  radmc3dexec=None, ID=None):
         '''
         Initializes RADMC3D child process and subprocess handlers.
@@ -48,7 +48,7 @@ class radmc3dRunner:
         if radmc3dexec:
             self.radmc3dexec = radmc3dexec
         
-        self.folder = folder
+        self.model_dir = model_dir
         
         self.proc = subprocess.Popen([self.radmc3dexec, 'child', 'setthreads',
                                       str(nthreads)], shell=False,

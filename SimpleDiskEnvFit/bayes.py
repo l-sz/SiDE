@@ -35,7 +35,7 @@ def lnpriorfn(p, par_ranges):
 
     return jacob
 
-def lnpostfn(p, p_ranges, parname, ppar, main_dir, visdata,
+def lnpostfn(p, p_ranges, parname, ppar, resource_dir, visdata,
              dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0,
              impar=None, verbose=False):
     """
@@ -100,13 +100,13 @@ def lnpostfn(p, p_ranges, parname, ppar, main_dir, visdata,
                                                             val))
     
     # Generate model folder name
-    folder = "{}/mod_".format('.')
+    model_dir = "{}/mod_".format('.')
     for i in range(len(parname)):
-        folder = "{:s}{:.2s}{:10.6E}_".format(folder,parname[i],p[i])
-    folder = "{:s}{:06}".format(folder,rand)
+        model_dir = "{:s}{:.2s}{:10.6E}_".format(model_dir,parname[i],p[i])
+    model_dir = "{:s}{:06}".format(model_dir,rand)
 
     if verbose:
-        print ('INFO [{:06}]: saving model to {:s}'.format(rand, folder))
+        print ('INFO [{:06}]: saving model to {:s}'.format(rand, model_dir))
 
     # Check/set image parameters
     if impar is None:
@@ -128,7 +128,8 @@ def lnpostfn(p, p_ranges, parname, ppar, main_dir, visdata,
 
     # compute the model brightness profile
     
-    mod = main.radmc3dModel(modpar=ppar, folder=folder, main_dir=main_dir, 
+    mod = main.radmc3dModel(modpar=ppar, model_dir=model_dir, 
+                            resource_dir=resource_dir, 
                             ID = rand)
     mod.write2folder()
 

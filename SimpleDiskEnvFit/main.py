@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import os
+import sys
 import time
 import numpy as np
 from shutil import copyfile, rmtree
@@ -31,6 +32,10 @@ import galario
 import uvplot
 
 __all__ = ['radmc3dModel','getParams']
+
+global module_dir
+
+module_dir = os.path.dirname(sys.modules['SimpleDiskEnvFit'].__file__)
 
 class radmc3dModel:
     '''
@@ -51,8 +56,8 @@ class radmc3dModel:
     opac_files = None
     
     # Model specific data
-    folder = None
-    main_dir = None
+    model_dir = None
+    resource_dir = None
     
     # Computed model parameters
     mdisk = 0.0
@@ -75,9 +80,9 @@ class radmc3dModel:
     # runner
     rrun = None
     
-    def __init__(self, modpar=None, folder=None, verbose=False,
+    def __init__(self, modpar=None, model_dir=None, resource_dir=None, 
                  idisk=True, ienv=True, icav=False, iext=False,
-                 main_dir='../', write2folder=False, ID=None):
+                 write2folder=False, ID=None, verbose=False):
         '''
         
         If folder parameter is set then it overwrites the value specified in 
@@ -102,17 +107,21 @@ class radmc3dModel:
         else:
             self.modpar = getParams()
         
-        if folder is not None:
-            self.folder = folder
-        elif "folder" in self.modpar.ppar.keys():
-            self.folder = self.modpar.ppar["folder"]
+        if model_dir is not None:
+            self.model_dir = model_dir
+        elif "model_dir" in self.modpar.ppar.keys():
+            self.model_dir = self.modpar.ppar["model_dir"]
         else:
-            self.folder = os.path.realpath('.')
+            self.model_dir = os.path.realpath('.')
+        
+        print (self.model_dir)
+        
+        if resource_dir is None:
             
-        self.main_dir = main_dir
+            self.resource_dir = '{}/{}'.format(module_dir,'/lnk_files')
             
-        # Update folder parameter in modpar
-        self.modpar.setPar(["folder", "'{}'".format(str(self.folder)), 
+        # Update model_dir parameter in modpar
+        self.modpar.setPar(["model_dir", "'{}'".format(str(self.model_dir)), 
                             " model folder path",
                             "Model carolina"])
         
@@ -145,7 +154,7 @@ class radmc3dModel:
         # Set model density distribution
         self._setDustDensity()
         
-        # Write data to run folder
+        # Write data to model_dir
         if write2folder:
             self.write2folder()
         
@@ -155,19 +164,19 @@ class radmc3dModel:
         
         # Done
 
-    def readModel(self, folder=None):
+    def readModel(self, model_dir=None):
         '''
         Read model from folder (parameter file, grid, density)
         
         Parameters
         ----------
-          folder  -  string, path to model to be read
+          model_dir  -  string, path to model to be read
         '''
         print ('INFO [{:06}]: This function is not implemented yet!'.format(ID))
         
         return 0
 
-    def updateModel(self, modpar=None, folder=None, verbose=False):
+    def updateModel(self, modpar=None, model_dir=None, verbose=False):
         '''
         Updates model density distribution and location according to
         set parameters.
@@ -176,12 +185,12 @@ class radmc3dModel:
         
         Parameters
         ----------
-          modpar  -  radmc3dPy.radmc3dPar class object containing the new 
-                     or updated model parameter values
-          folder  -  string, new model folder name
-          verbose -  if True then write parameter summary to screen
+          modpar   -  radmc3dPy.radmc3dPar class object containing the new 
+                      or updated model parameter values
+          model_dir-  string, new model folder name
+          verbose  -  if True then write parameter summary to screen
         '''
-        self.__init__(modpar=modpar, folder=folder, verbose=verbose)
+        self.__init__(modpar=modpar, model_dir=model_dir, verbose=verbose)
         
         return 0
         
@@ -297,7 +306,7 @@ class radmc3dModel:
           ienv   -  include envelope in model
           icav   -  include envelope cavity in model (only if ienv=True)
           iext   -  include external radiation
-          write  -  write new density distribution to disk (model folder)
+          write  -  write new density distribution to disk (model_dir)
         '''
         recompute = False
 
@@ -330,7 +339,7 @@ class radmc3dModel:
         
     def write2folder(self, write_param=False):
         '''
-        Write RADMC-3D model to given directory given by the self.folder 
+        Write RADMC-3D model to given directory given by the self.model_dir 
         variable.
         
         Parameters
@@ -343,9 +352,9 @@ class radmc3dModel:
         current_dir = os.path.realpath('.')
 
         # Create folder if necessary
-        if not os.path.isdir(self.folder):
-            os.makedirs(self.folder)
-        os.chdir(self.folder)
+        if not os.path.isdir(self.model_dir):
+            os.makedirs(self.model_dir)
+        os.chdir(self.model_dir)
         
         # Frequency grid
         self.grid.writeWavelengthGrid(old=False)
@@ -376,12 +385,12 @@ class radmc3dModel:
         os.chdir(current_dir)
         
         #
-        # The following methods take care of finding self.folder themselves
+        # The following methods take care of finding self.model_dir themselves
         #
         # Write opacity if it was computed 
         self.writeOpac()
         # Copy opacity files if they are specified in parameters
-        self.copyOpac(path=self.main_dir)
+        self.copyOpac(path=self.resource_dir)
         
         return 0
     
@@ -480,9 +489,9 @@ class radmc3dModel:
         
         return 0
     
-    def copyOpac(self, path='../'):
+    def copyOpac(self, path=None):
         '''
-        Copy the opacity file from main model folder to current model folder.
+        Copy the opacity file from resource_dir folder to model_dir folder.
         
         This function should be replaced by in place opacity computation!
         
@@ -490,9 +499,14 @@ class radmc3dModel:
         ----------
         path   --  path to the main model folder containing the opacity files.
                    Should be absolute or relative path to the current model dir.
+                   If not set then use resource_dir class variable.
         '''
+        
+        if path is None:
+            path = self.resource_dir
+        
         current_dir = os.path.realpath('.')
-        os.chdir(self.folder)
+        os.chdir(self.model_dir)
 
         par = self.modpar.ppar
 
@@ -518,7 +532,7 @@ class radmc3dModel:
         '''
         '''
         current_dir = os.path.realpath('.')
-        os.chdir(self.folder)
+        os.chdir(self.model_dir)
         
         # Start only if opacity is stored in object
         if self.opac.wav:
@@ -533,7 +547,7 @@ class radmc3dModel:
         
         return 0
         
-    def runModel(self, folder='.', bufsize=500000, nthreads=1, radmc3dexec=None,
+    def runModel(self, bufsize=500000, nthreads=1, radmc3dexec=None,
                  mctherm=True, noscat=None, nphot_therm=None, nphot_scat=None,
                  nphot_mcmono=None, impar=None, verbose=False):
         '''
@@ -541,10 +555,10 @@ class radmc3dModel:
         and / or compute image according impar dictionary.
         '''
         current_dir = os.path.realpath('.')
-        os.chdir(self.folder)
+        os.chdir(self.model_dir)
         
         # Initialize radmc3dRunner
-        self.rrun = runner.radmc3dRunner(folder=self.folder, bufsize=500000,
+        self.rrun = runner.radmc3dRunner(model_dir=self.model_dir, bufsize=500000,
                                          nthreads=1, radmc3dexec=None, 
                                          ID=self.ID)
         
@@ -597,6 +611,9 @@ class radmc3dModel:
                      visibility data. The 'u', 'v', 'Re', 'Im', 'w' and 'wav'
                      keywords need to be defined.
           dpc     -  float, distance to object in unit of parsec
+          PA      -  position angle (in radian)
+          dRA     -  offset in RA (in radian)
+          dDec    -  offset in Dec (in radian)
         '''
         
         if self.image is None:
@@ -668,9 +685,9 @@ class radmc3dModel:
         
         current_dir = os.path.realpath('.')
 
-        if current_dir != self.folder:
+        if current_dir != self.model_dir:
 
-            rmtree(self.folder)
+            rmtree(self.model_dir)
         
         else:
             print("WARN [{:06}]: Folder cannot be deleted!".format(self.ID))
@@ -741,7 +758,7 @@ class radmc3dModel:
                 if os.path.isfile(lnk):
                     fname = lnk
                 else:
-                    fname = "{}/{}".format(self.main_dir,lnk)
+                    fname = "{}/{}".format(self.resource_dir,lnk)
 
                 opac_tmp = radmc3dPy.miescat.compute_opac_mie(fname=fname,
                                                              matdens=mtd,

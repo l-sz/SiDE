@@ -261,9 +261,15 @@ class radmc3dModel:
                     ppar['modeEnv'] ))
             
         # Add up density contributions
-        if ppar['ngs'] == 2 and ppar['idisk'] and ppar['ienv']:
-            rhodust = np.zeros([self.grid.nx, self.grid.ny, self.grid.nz,
-                                ppar['ngs']])
+        if 'ngpop' in ppar.keys():
+            ngpop = ppar['ngpop']
+        else:
+            ngpop = 1
+            print ("WARN [{:06}]: ngpop not defined in parameter file, \
+                    using {:2} dust species".format(self.ID, ngpop))
+        
+        if ngpop == 2 and ppar['idisk'] and ppar['ienv']:
+            rhodust = np.zeros([self.grid.nx, self.grid.ny, self.grid.nz, ngpop])
             rhodust[:,:,:,0] = rho_disk_dust[:,:,:,0]
             rhodust[:,:,:,1] = rho_env_dust[:,:,:,0]
             self.data.rhodust = rhodust
@@ -537,9 +543,9 @@ class radmc3dModel:
         # Start only if opacity is stored in object
         if self.opac.wav:
             
-            ngs = self.modpar.ppar['ngs']
+            ngpop = self.modpar.ppar['ngpop']
             
-            for i in range(ngs):
+            for i in range(ngpop):
                 print ('INFO [{:06}]: Writing dustkappa_{}.inp'.format(self.ID, self.opac_files[i]))
                 self.opac.writeOpac(ext=self.opac_files[i], idust=i)
         
@@ -702,6 +708,9 @@ class radmc3dModel:
         Compute dust opacity on the fly according to parameters defined in the 
         self.modpar object.
         
+        The code search the lnk file in the current folder first. If not found then
+        it looks for it in the resource_dir folder.
+        
         Currently single grain size is supported and the code requires the 
         Fortran implementation of the Mie scattering code in radmc3dPy.
         '''
@@ -728,31 +737,78 @@ class radmc3dModel:
                 print ("WARN [{:06}]: gdens not defined in parameter file, \
                         using {:.2} g/cm^3".format(self.ID, matdens[0]))
                 
-            if 'agraincm' in par.keys():
-                agraincm = par['agraincm']
-                if type(agraincm) is not list:
-                    agraincm = [agraincm]
+            if 'gsmin' in par.keys():
+                gsmin = par['gsmin']
+                if type(gsmin) is not list:
+                    gsmin = [gsmin]
             else:
-                agraincm = [0.1 * 1.0e-4] # 0.1 micron converted to cm
-                print ("WARN [{:06}]: agraincm not defined in parameter file, \
-                           using {:.2} cm".format(self.ID, agraincm[0]))
+                gsmin = [0.1 * 1.0e-4] # 0.1 micron converted to cm
+                print ("WARN [{:06}]: gsmin not defined in parameter file, \
+                           using {:.2} cm".format(self.ID, gsmin[0]))
             
-            n_lnk = len(lnk_fname)
-            n_mat = len(matdens)
-            n_gra = len(agraincm)
+            if 'gsmax' in par.keys():
+                gsmax = par['gsmax']
+                if type(gsmax) is not list:
+                    gsmax = [gsmax]
+            else:
+                gsmax = [0.1 * 1.0e-4] # 0.1 micron converted to cm
+                print ("WARN [{:06}]: gsmax not defined in parameter file, \
+                           using {:.2} cm".format(self.ID, gsmax[0]))
             
-            ngs = par['ngs']
-            
-            if ngs > 1:
-                if n_lnk == 1: lnk_fname = lnk_fname * ngs
-                if n_mat == 1: matdens = matdens * ngs
-                if n_gra == 1: agraincm = agraincm * ngs
-            
-            for i in range(ngs):
+            if 'ngs' in par.keys():
+                ngs = par['ngs']
+                if type(ngs) is not list:
+                    ngs = [ngs]
+            else:
+                ngs = [1]
+                print ("WARN [{:06}]: ngs not defined in parameter file, \
+                           using {:.2} grain sizes".format(self.ID, ngs[0]))
                 
+            if 'gsdist_powex' in par.keys():
+                gsdist_powex = par['gsdist_powex']
+                if type(gsdist_powex) is not list:
+                    gsdist_powex = [gsdist_powex]
+            else:
+                gsdist_powex = [-3.5]    # assumed ISM value
+                print ("WARN [{:06}]: gsdist_powex not defined in parameter file, \
+                           using {:.2}".format(self.ID, gsdist_powex[0]))
+
+            if 'ngpop' in par.keys():
+                ngpop = par['ngpop']
+            else:
+                ngpop = 1
+                print ("WARN [{:06}]: ngpop not defined in parameter file, \
+                           using {:2} dust species".format(self.ID, ngpop))
+            
+            # If multiple grain populations are computed, then make sure that all 
+            # required input list has enough elements:
+            if ngpop > 1:
+                if len(lnk_fname) == 1: lnk_fname = lnk_fname * ngpop
+                if len(matdens) == 1  : matdens = matdens * ngpop
+                if len(gsmax) == 1    : gsmax = gsmax * ngpop
+                if len(gsmin) == 1    : gsmin = gsmin * ngpop
+                if len(ngs) == 1      : ngs = ngs * ngpop
+                if len(gsdist_powex) == 1 : gsdist_powex = gsdist_powex * ngpop
+            
+            # Loop over grain populations
+            for i in range(ngpop):
+                
+                # Loop variables
                 lnk = lnk_fname[i]
-                agr = agraincm[i]
+                ngb = ngs[i]
+                amin = gsmin[i]
+                amax = gsmax[i]
                 mtd = matdens[i]
+                pla = gsdist_powex[i]
+                
+                # Grain sizes
+                agr = np.logspace(np.log10(amin), np.log10(amax), ngb)
+                
+                # Compute weighting factors
+                pwgt = (pla - 2.0) / 3.0 + 2.0
+                mgra = (4.0/3.0*np.pi) * agr**3 * mtd
+                dum  = (mgra / mgra[0])**pwgt
+                mwgt = dum / np.sum(dum)
                 
                 # Find file in local or main directory
                 if os.path.isfile(lnk):
@@ -760,24 +816,37 @@ class radmc3dModel:
                 else:
                     fname = "{}/{}".format(self.resource_dir,lnk)
 
-                opac_tmp = radmc3dPy.miescat.compute_opac_mie(fname=fname,
+                kabs = np.zeros_like(lamcm)
+                ksca = np.zeros_like(lamcm)
+                gsca = np.zeros_like(lamcm)
+
+                # Loop over grain sizes
+                for j in range(ngb):
+                    
+                    opac_tmp = radmc3dPy.miescat.compute_opac_mie(fname=fname,
                                                              matdens=mtd,
-                                                             agraincm=agr,
+                                                             agraincm=agr[j],
                                                              lamcm=lamcm,
                                                              extrapolate=True)
+                    
+                    kabs += mwgt[j] * opac_tmp['kabs']
+                    ksca += mwgt[j] * opac_tmp['kscat']
+                    gsca += mwgt[j] * opac_tmp['gscat']
                 
-                self.opac.kabs.append( opac_tmp['kabs'] )
-                self.opac.ksca.append( opac_tmp['kscat'] )
+                # Save grain population data
+                self.opac.kabs.append( kabs )
+                self.opac.ksca.append( ksca )
                 self.opac.wav.append( opac_tmp['lamcm'] * 1.0e4 )
                 self.opac.nwav.append( len(opac_tmp['lamcm']) )
                 self.opac.freq.append( nc.cc / opac_tmp['lamcm'] )
                 self.opac.nfreq.append( len(opac_tmp['lamcm']) )
                 self.opac.scatmat.append( False )
-                self.opac.phase_g.append( opac_tmp['gscat'] )
+                self.opac.phase_g.append( gsca )
                 self.opac.idust.append( i )
                 
-                self.opac.ext.append( "ag_{:06.2}".format( agr * 1.0e4 ) )
-                
+                self.opac.ext.append( "amin_{:06.3E}_amax_{:06.3E}_pl{:04.2}".format(amin,amax,pla))
+            
+            # Save computed opacities
             self.opac_files = self.opac.ext
                 
         else:
@@ -862,8 +931,12 @@ def getParams(paramfile=None):
                        'Dust opacity'])
         modpar.setPar(['gdens', '3.5', 
                        ' Bulk density of the materials in g/cm^3', 'Dust opacity'])
-        modpar.setPar(['agraincm', '1.0e-5', ' Grain size [cm]', 'Dust opacity'])
-        modpar.setPar(['ngs', '1', ' Number of grain populations', 'Dust opacity'])
+        modpar.setPar(['gsmin', '1.0e-5', ' Minimum grain size [cm]', 'Dust opacity'])
+        modpar.setPar(['gsmax', '1.0e-5', ' Maximum grain size [cm]', 'Dust opacity'])
+        modpar.setPar(['ngs', '1', ' Number of grain size bins', 'Dust opacity'])
+        modpar.setPar(['gsdist_powex', '1', ' Power law index of grain size distribution', 'Dust opacity'])
+        modpar.setPar(['ngpop', '1', ' Number of grain populations', 'Dust opacity'])
+        modpar.setPar(['ngs', '1', ' Number of grain size bins', 'Dust opacity'])
 
         # Code parameters
         modpar.setPar(['scattering_mode_max', '0', 

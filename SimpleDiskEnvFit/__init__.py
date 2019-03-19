@@ -1,9 +1,10 @@
 """
-SimpleDisk: Code to set up a multidust disk + envelope RADMC-3D models
+SimpleDiskEnvFit: Code to set up multi-dust disk-envelope RADMC3D models and 
+compute their likelihood given a set of observational constraints.
 
-Copyright (C) 2018 Laszlo Szucs <laszlo.szucs@mpe.mpg.de>
+Copyright (C) 2019 Laszlo Szucs <laszlo.szucs@mpe.mpg.de>
 
-Licensed under GLPv2, for more information see the LICENSE file repository.
+Licensed under GLPv2, for more information see the LICENSE file in repository.
 """
 
 from . import bayes
@@ -11,7 +12,7 @@ from . import bayes
 from .main import radmc3dModel, getParams
 from .runner import radmc3dRunner
 
-__version__ = "1.0"
+__version__ = "0.1"
 __author__ = "Laszlo Szucs (laszlo.szucs@mpe.mpg.de)"
 
 __all__ =  ["radmc3dModel","getParams","radmc3dRunner","bayes"]

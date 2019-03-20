@@ -1,7 +1,7 @@
 import os
 import pickle
 import numpy as np
-from matplotlib.pyplot import savefig
+import matplotlib.pyplot as plt
 
 import SimpleDiskEnvFit
 
@@ -70,7 +70,7 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=20, nsteps=300, nburnin=100,
 
     parname = ['mdisk','rho0Env','gsmax_disk','gsmax_env','PA',
                'dRA', 'dDec']
-    p_ranges = [[-20., -2.],    # log disk mass [solar mass]
+    p_ranges = [[-10., -2.],    # log disk mass [solar mass]
                 [-23., -19.],   # log envelope density [g/cm**3]
                 [-6., 0.],      # log disk grain size [cm]
                 [-6., 0.],      # log envelope grain size [cm]
@@ -120,13 +120,14 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=20, nsteps=300, nburnin=100,
     
     if plot:
         plot_corner(main_dir, results=results, nburnin=nburnin, save=True, 
-                    figname='elias29_mcmc.pdf')
+                    figname='elias29_mcmc.pdf', show=False)
     
     # Return
     os.chdir(current_dir)
     return results
 
-def plot_corner(main_dir, results=None, nburnin=0, save=True, figname='corner.pdf'):
+def plot_corner(main_dir, results=None, nburnin=0, range=None, show=True, 
+                save=True, figname='corner.pdf', full_range=False):
     '''
     Plots the posteriori distribution of the fitted parameters.
     
@@ -141,19 +142,33 @@ def plot_corner(main_dir, results=None, nburnin=0, save=True, figname='corner.pd
     current_dir = os.path.realpath('.')
     os.chdir(main_dir)
     
+    # Restore results from file
     if results is None:
         results = pickle.load( open( 'elias29_mcmc_save.p','rb' ) )
+
+    os.chdir(current_dir)
     
-    samples = results['chain'][:, -nburnin:, :].reshape((-1, results['ndim']))
-    
+    chain = results['chain']
+
+    # Determine nsteps
+    nstep = chain.shape[1]
+    nstep = nstep - nburnin
+
+    # Get samples and ranges
+    samples = results['chain'][:, -nstep:, :].reshape((-1, results['ndim']))
+
+    if range is None and full_range:
+        range = results['p_range']
+
     fig1 = corner.corner(samples, labels=results['parname'],                                      
                          show_titles=True, quantiles=[0.16, 0.50, 0.84],
                          label_kwargs={'labelpad':20, 'fontsize':0}, 
-                         fontsize=8)
+                         fontsize=8, range=range)
     if save:
         plt.savefig(figname)
-    
-    os.chdir(current_dir)
+
+    if show:
+        plt.show()
     
     return
 

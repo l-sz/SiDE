@@ -64,22 +64,33 @@ def lnpostfn(p, p_ranges, parname, ppar, resource_dir, visdata,
             val = 10**p[i]
         elif parname[i] == 'rdisk':
             val = p[i] * nc.au
-        elif parname[i][0:6] == 'agrain':
+        elif parname[i][0:3] == 'gsm': # gsmin or gsmax
             val = 10.0**p[i]
         else:
             val = p[i]
         
         # Set the model parameters
         if parname[i] in ppar.ppar.keys():
-            ppar.setPar([parname[i], "{:10.6E}".format(val)])
-        elif parname[i] =='agrain_env':
-            tmp = ppar.ppar['agraincm']
+            if type(val) is list:
+                ppar.setPar([parname[i], "{}".format(val)])
+            else:
+                ppar.setPar([parname[i], "{:10.6E}".format(val)])
+        elif parname[i] =='gsmax_env':
+            tmp = ppar.ppar['gsmax']
             tmp[1] = val
-            ppar.setPar(['agraincm', "{}".format(tmp)])
-        elif parname[i] =='agrain_disk':
-            tmp = ppar.ppar['agraincm']
+            ppar.setPar(['gsmax', "{}".format(tmp)])
+        elif parname[i] =='gsmax_disk':
+            tmp = ppar.ppar['gsmax']
             tmp[0] = val
-            ppar.setPar(['agraincm', "{}".format(tmp)])
+            ppar.setPar(['gsmax', "{}".format(tmp)])
+        elif parname[i] =='gsmin_env':
+            tmp = ppar.ppar['gsmin']
+            tmp[1] = val
+            ppar.setPar(['gsmin', "{}".format(tmp)])
+        elif parname[i] =='gsmin_disk':
+            tmp = ppar.ppar['gsmin']
+            tmp[0] = val
+            ppar.setPar(['gsmin', "{}".format(tmp)])
         elif parname[i] == 'dpc':
             dpc = val
         elif parname[i] == 'incl':

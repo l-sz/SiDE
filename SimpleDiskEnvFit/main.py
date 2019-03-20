@@ -117,9 +117,11 @@ class radmc3dModel:
         print (self.model_dir)
         
         if resource_dir is None:
-            
             self.resource_dir = '{}/{}'.format(module_dir,'/lnk_files')
-            
+            print (self.resource_dir)
+        else:
+            self.resource_dir = resource_dir
+          
         # Update model_dir parameter in modpar
         self.modpar.setPar(["model_dir", "'{}'".format(str(self.model_dir)), 
                             " model folder path",
@@ -844,7 +846,7 @@ class radmc3dModel:
                 self.opac.phase_g.append( gsca )
                 self.opac.idust.append( i )
                 
-                self.opac.ext.append( "amin_{:06.3E}_amax_{:06.3E}_pl{:04.2}".format(amin,amax,pla))
+                self.opac.ext.append("amin_{:06.3E}_amax_{:06.3E}_pl{:04.2}".format(amin,amax,pla))
             
             # Save computed opacities
             self.opac_files = self.opac.ext

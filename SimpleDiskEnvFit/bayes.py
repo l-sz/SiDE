@@ -113,7 +113,7 @@ def lnpostfn(p, p_ranges, parname, ppar, resource_dir, visdata,
     # Generate model folder name
     model_dir = "{}/mod_".format('.')
     for i in range(len(parname)):
-        model_dir = "{:s}{:.2s}{:10.6E}_".format(model_dir,parname[i],p[i])
+        model_dir = "{:s}{:.4s}{:0.3E}_".format(model_dir,parname[i],p[i])
     model_dir = "{:s}{:06}".format(model_dir,rand)
 
     if verbose:

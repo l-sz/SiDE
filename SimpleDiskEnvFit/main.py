@@ -24,12 +24,12 @@ from shutil import copyfile, rmtree
 import radmc3dPy
 import radmc3dPy.natconst as nc
 
+import galario
+import uvplot
+
 # Internal routines
 from . import models
 from . import runner
-
-import galario
-import uvplot
 
 __all__ = ['radmc3dModel','getParams']
 
@@ -39,12 +39,14 @@ module_dir = os.path.dirname(sys.modules['SimpleDiskEnvFit'].__file__)
 
 class radmc3dModel:
     '''
-    Interface for creating, running and analysing RADMC-3D models
+    Interface for creating, running and analysing RADMC-3D models.
     
-    The class provides storage, read-in and write-out routines. Plotting 
-    routines should be added in the future.
+    The class provides storage, read-in and write-out routines, runner interface 
+    to call RADMC-3D as a child process and interface to galario code to translate 
+    images to the complex visibility space. 
+    
+    Plotting routines should be added in the future.
     '''
-    
     ID = None
     
     # radmc3dPy objects
@@ -84,12 +86,57 @@ class radmc3dModel:
                  idisk=True, ienv=True, icav=False, iext=False,
                  write2folder=False, ID=None, verbose=False):
         '''
+        Self contained RADMC-3D model class. 
         
-        If folder parameter is set then it overwrites the value specified in 
-        modpar parameter list. If folder parameter is not set in initialization 
-        call, then use the value from modpar. If folder is set neither as parameter 
-        nor in modpar, then default to '.' current folder (using absolute path).
+        The class provides and easy interface to create, write and run RADMC-3D 
+        protoplanetary disk and envelope dust continuum models. Model parameters 
+        are defined in a radmc3dPy.modPar class object (see getParams() method).
+        Model components (disk, envelope, cavity) might be activated and 
+        deactivated at model initialization or with the updateModel() method.
         
+        If model_dir parameter is set then it overwrites the value specified in 
+        modPar parameter list. If model_dir is not set at initialization, then 
+        the value from modPar is used. If model_dir is set neither as parameter 
+        nor it is contained in modpPar, then it defaults to '.' current folder 
+        (using absolute path).
+        
+        Additional files needed to create the model (e.g. dust opacity file or 
+        complex index of refraction (.lnk) file) should be found in resource_dir.
+        If resource_dir is not set, then search the {SIMPLEDISKENVFIT_HOME}/lnk_files
+        folder for the requested files.
+        
+        Parameters
+        ----------
+        modpar : radmc3dPy.radmc3dPar class object
+                Containing the model parameter values.
+        model_dir : string
+                Path (absolute or relative) to the folder where the model is stored 
+                and/or written. Files needed to be written to disk for the 
+                RADMC-3D computation are stored here. model_dir is created when 
+                write2folder() class method is called.
+        resource_dir : sting
+                Path (absolute or relative) to the folder containing additional 
+                files (e.g. dust opacity or lnk files) that are needed to create 
+                the model. Defaults to {SIMPLEDISKENVFIT_HOME}/lnk_files.
+        idik :  bool
+                If True, then include disk in model. Default is True.
+        ienv :  bool
+                If True, then include envelope in model. Default is True.
+        icav :  bool
+                If True, then envlope has a cavity. Default is False.
+        iext :  bool, optional
+                Irradiate model by external radiation field (1 Draine field 
+                strength). See Draine (1978) and Black (1994). Default is False.
+        write2folder : bool, optional
+                If True then use write2folder() class method to save model 
+                at initialization to the destination folder. Default is False.
+        ID :    integer, optional
+                Set model ID directly by user. If None, then a randomly generated 
+                integer in teh (0,99999) range is used. Default is None.
+        verbose : bool, optional
+                If True, then print summary of model parameters to standard 
+                output. Runtime INFO messages are also printed to standard 
+                output. Default is False.
         '''
         # Set model ID
         if ID is None:
@@ -107,6 +154,7 @@ class radmc3dModel:
         else:
             self.modpar = getParams()
         
+        # Set model directory
         if model_dir is not None:
             self.model_dir = model_dir
         elif "model_dir" in self.modpar.ppar.keys():
@@ -114,11 +162,9 @@ class radmc3dModel:
         else:
             self.model_dir = os.path.realpath('.')
         
-        print (self.model_dir)
-        
+        # Set resource directory
         if resource_dir is None:
             self.resource_dir = '{}/{}'.format(module_dir,'/lnk_files')
-            print (self.resource_dir)
         else:
             self.resource_dir = resource_dir
           
@@ -172,7 +218,8 @@ class radmc3dModel:
         
         Parameters
         ----------
-          model_dir  -  string, path to model to be read
+        model_dir : string
+                Path to model to be read.
         '''
         print ('INFO [{:06}]: This function is not implemented yet!'.format(ID))
         
@@ -187,10 +234,12 @@ class radmc3dModel:
         
         Parameters
         ----------
-          modpar   -  radmc3dPy.radmc3dPar class object containing the new 
-                      or updated model parameter values
-          model_dir-  string, new model folder name
-          verbose  -  if True then write parameter summary to screen
+        modpar : radmc3dPy.radmc3dPar class object
+                Containing the new or updated model parameter values.
+        model_dir : string
+                New model folder name.
+        verbose : bool, optional
+                If True then write parameter summary to screen. Default is False.
         '''
         self.__init__(modpar=modpar, model_dir=model_dir, verbose=verbose)
         
@@ -198,6 +247,14 @@ class radmc3dModel:
         
     def _setRadSources(self):
         '''
+        Compute and store stellar and optional interstellar radiation sources.
+        
+        Black body spectrum is assumed for the stellar radiation. The optional 
+        interstellar radiation (ISRF) has a strength of the Draine field and 
+        the spectrum given by Draien (1978) and Black (1994)
+        
+        ISRF computed only if modpar class variable contains the 'iext' keyword 
+        and the value is set to True. (see __init__)
         '''
         
         # Stellar radiation
@@ -216,7 +273,7 @@ class radmc3dModel:
 
     def _setGrid(self):
         '''
-        Creates wavelength and spatial grids using internal radmc3dPy functions
+        Creates wavelength and spatial grids using internal radmc3dPy functions.
         '''
         
         # Create the wavelength grid
@@ -229,7 +286,19 @@ class radmc3dModel:
 
     def _setDustDensity(self):
         '''
-        Computes dust density distribution
+        Computes dust density distributions.
+        
+        Disk and envelope density may be treated as separate (ngpop==2) or 
+        combined (ngpop!=2) species, depending on the ngpop parameter in modpar 
+        class variable.
+        
+        The disk component is a parametric hydrostatic disk model (see models.py).
+        
+        Three possible envelope density structures may be used: Ulrich1976, 
+        Tafalla2004 and powerlaw (see model.py). Optionally, the envelope may 
+        include a cavity.
+        
+        Model parameters are stored in the modpar class variable.
         '''
         ppar = self.modpar.ppar   # in order to shorten code
    
@@ -286,7 +355,8 @@ class radmc3dModel:
         
         Parameters
         ----------
-          fname  -  string, name of output file (default external_source.inp)
+        fname : string (default external_source.inp)
+                Name of output file
         '''
         print('INFO [{:06}]: Writing {}'.format(self.ID, fname))
         
@@ -310,11 +380,17 @@ class radmc3dModel:
         
         Parameters
         ----------
-          idisk  -  include disk in model
-          ienv   -  include envelope in model
-          icav   -  include envelope cavity in model (only if ienv=True)
-          iext   -  include external radiation
-          write  -  write new density distribution to disk (model_dir)
+        idisk : bool
+                Include disk in model.
+        ienv :  bool   
+                Include envelope in model.
+        icav :  bool, optional
+                Include envelope cavity in model (only if ienv=True).
+        iext :  bool, optional
+                Include external radiation.
+        write : bool, optional
+                Write new density distribution to model_dir folder. Default is 
+                True.
         '''
         recompute = False
 
@@ -347,15 +423,14 @@ class radmc3dModel:
         
     def write2folder(self, write_param=False):
         '''
-        Write RADMC-3D model to given directory given by the self.model_dir 
-        variable.
+        Write RADMC-3D model to model_dir folder.
         
         Parameters
         ----------
-          write_param  -  if True overwrite parameter file in folder, given
-                          that file already exists. Note that parameter file is
-                          written regardless if it is not already present in 
-                          folder.
+        write_param : bool, optional
+                If True overwrite parameter file in folder, given that file 
+                already exists. Note that parameter file is written regardless, 
+                if it is not already present in folder. Default is False.
         '''
         current_dir = os.path.realpath('.')
 
@@ -404,8 +479,8 @@ class radmc3dModel:
     
     def infoModelParams(self):
         '''
-        Show model parameters (grid, star, disk, envelope) and computed values 
-        (disk and envelope mass).
+        Print model parameters (grid, star, disk, envelope) and computed values 
+        (disk and envelope mass) to standard output.
         '''
         ppar = self.modpar.ppar
     
@@ -499,17 +574,14 @@ class radmc3dModel:
     
     def copyOpac(self, path=None):
         '''
-        Copy the opacity file from resource_dir folder to model_dir folder.
-        
-        This function should be replaced by in place opacity computation!
+        Copy opacity file(s) from resource_dir folder to model_dir folder.
         
         Parameters
         ----------
-        path   --  path to the main model folder containing the opacity files.
-                   Should be absolute or relative path to the current model dir.
-                   If not set then use resource_dir class variable.
+        path :  string
+                Absolute or relative path to the main model folder containing the 
+                opacity files. If not set, then use resource_dir class variable.
         '''
-        
         if path is None:
             path = self.resource_dir
         
@@ -536,8 +608,16 @@ class radmc3dModel:
 
         os.chdir(current_dir)
         
+        return 0
+        
     def writeOpac(self):
         '''
+        Write dust opacity data to model_dir. The dust opacity should be first 
+        computed using the computeOpac() class method. 
+        
+        The opacity data should be stored in the opac class variable and the 
+        output file extension (in the form dustkappa_xxx.inp) is stored in the 
+        opac_files class variable (list if multiple species are used).
         '''
         current_dir = os.path.realpath('.')
         os.chdir(self.model_dir)
@@ -551,6 +631,11 @@ class radmc3dModel:
                 print ('INFO [{:06}]: Writing dustkappa_{}.inp'.format(self.ID, self.opac_files[i]))
                 self.opac.writeOpac(ext=self.opac_files[i], idust=i)
         
+        else:
+            
+            print ('WARN [{:06}]: No dust opacity found. Run computeOpac() first!')
+            pass
+        
         os.chdir(current_dir)
         
         return 0
@@ -561,6 +646,44 @@ class radmc3dModel:
         '''
         Run Monte Carlo dust radiation transport to determine dust temperature 
         and / or compute image according impar dictionary.
+        
+        Parameters
+        ----------
+        bufsize : int
+                buffer size in bytes used for the communication with the RADMC-3D 
+                child process. If large images are computed then it needs to be 
+                increased. Default is 500000.
+        nthreads : int
+                Number of threads used in the thermal Monte Carlo calculation. 
+                Default is 1.
+        readmc3dexec : string
+                Path to the RADMC3D binary. If not set, then assume it to be 
+                reachable in $PATH.
+        mctherm : bool, optional
+                If True, then run thermal Monte Carlo computation. Default is 
+                True.
+        noscat : int, optional
+                Switch off scattering process even if dust opacity file contains 
+                scattering cross sections. If None, then option from radmc3d.inp 
+                is used. Default is None.
+        nphot_therm : int, optional
+                Set number of thermal photon packages. If None, then option from 
+                radmc3d.inp is used. Default is None.
+                Note: as of RADMC-3D version 0.41 setting nphot_therm in child 
+                mode is not supported. If code crashes, set this to None and 
+                adjust nphot_therm in the radmc3dPy parameter file.
+        nphot_scat : int, optional
+                Set number of photon packages used for scattering. If None, then 
+                option from radmc3d.inp is used. Default is None.
+        nphot_mcmono : int, optional
+                Set number of photon packages in monochromatic MC simulation. 
+                If None, then option from radmc3d.inp is used. Default is None.
+        impar : dict or list of dict, optional
+                Image parameter(s). Known keywords are listed in the runImage()
+                method description. At least the wavelength (wav keyword) must 
+                be set for each images. Default is None.
+        verbose : bool, optional
+                Print INFO messages to standard output. Default is False.
         '''
         current_dir = os.path.realpath('.')
         os.chdir(self.model_dir)
@@ -615,13 +738,17 @@ class radmc3dModel:
         
         Parameters
         ----------
-          uvdata  -  dictionary or list of dictionaries containing observed 
-                     visibility data. The 'u', 'v', 'Re', 'Im', 'w' and 'wav'
-                     keywords need to be defined.
-          dpc     -  float, distance to object in unit of parsec
-          PA      -  position angle (in radian)
-          dRA     -  offset in RA (in radian)
-          dDec    -  offset in Dec (in radian)
+        uvdata : dict or list of dict 
+                Containing observed visibility data. The 'u', 'v', 'Re', 'Im', 
+                'w' and 'wav' keywords need to be defined.
+        dpc  :  float
+                Distance to object in unit of parsec, Default is 1.0.
+        PA   :  float, optional
+                Position angle in radian. Default is 0.0.
+        dRA  :  float, optional
+                Offset in RA in radian. Default is 0.0.
+        dDec :  float, optional
+                Offset in Dec in radian. Default is 0.0.
         '''
         
         if self.image is None:
@@ -867,7 +994,9 @@ def getParams(paramfile=None):
     
     Parameters
     ----------
-      paramfile - name of parameter file (usually problem_params.inp, default None).
+    paramfile : string, optional
+                Name of parameter file (usually problem_params.inp). If file is 
+                not set (None) then load defaults. Default is None.
     '''
     
     # Read the parameters from the problem_params.inp file 

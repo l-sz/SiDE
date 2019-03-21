@@ -26,14 +26,22 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=20, nsteps=300, nburnin=100,
     
     Parameters
     ----------
-      main_dir  -  directory containing input and output files
-      nthreads  -  number of threads used (default 8)
-      nwalkers  -  number of walkers used (default 20)
-      nsteps    -  number of walker steps in the main run (default 300)
-      nburnin   -  number of walker steps in initial "burn-in" run (default 100)
-      plot      -  plot the posterior likelihood distributions (default True)
-      use_mpi   -  use MPI pools instead of python threads. Useful for running 
-                   on computer clusters using multiple nodes (default False)
+    main_dir : string
+            Directory containing input and output files
+    nthreads : int
+            Number of threads used in multiprocessing mode. This is ignored 
+            in MPI mode. Default is 8.
+    nwalkers : int
+            Number of walkers used. Default is 20.
+    nsteps  : int
+            Number of walker steps in the main run. Default is 300.
+    nburnin : int, optional
+            Number of walker steps in initial "burn-in" run. Default is 100.
+    plot    : bool, optional
+            Plot the posterior likelihood distributions. Default is True.
+    use_mpi : bool, optional
+            Use MPI pools instead of python threads. Useful for running 
+            on computer clusters using multiple nodes. Default is False.
     '''
     if use_mpi:
         pool = MPIPool()
@@ -106,7 +114,7 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=20, nsteps=300, nburnin=100,
     chain = sampler.chain[:, :, :]
 
     # Save results
-    results = {'chain': chain, 'parname':parname, 'p_range':p_ranges, 'p0':p0,
+    results = {'chain': chain, 'parname':parname, 'p_ranges':p_ranges, 'p0':p0,
                'ndim':ndim, 'nwalkers':nwalkers, 'nthreads':nthreads, 
                'visdata':visdata, 'impar':impar}
     
@@ -133,11 +141,35 @@ def plot_corner(main_dir, results=None, nburnin=0, range=None, show=True,
     
     Parameters
     ----------
-      main_dir  -  Main folder containing the observational constrain data, 
-                   optical constants, parameter file, model run folders and 
-                   <result_data>.p file containing the results of the fitting.
-      results   -  Dictionary output from run_mcmc() function (optional)
-      save      -  Save figure to pdf file (default True)
+    main_dir : string
+            Main folder containing the observational constrain data, 
+            optical constants, parameter file, model run folders and 
+            <result_data>.p file containing the results of the fitting.
+    results : dict, optional
+            Dictionary output from run_mcmc() function.
+    nburnin : int, optional
+            Number of initial burn-in steps. These are not shown in figure.
+    range   : list, optional
+            Plotting ranges of each parameters given in a list of lists. The 
+            number of bundled 2 element list (min, max) must be equal to the 
+            number of fitted parameters (see also full_range). If not set, 
+            then corner routine decided.
+    show    : bool, optional
+            Show corner plot on screen. Set this to False in non-interactive 
+            script. Default is True.
+    save    : bool, optional
+            Save corner plot to supported file format (e.g. pdf or png). The 
+            filename, including format is set by figname argument. Default is 
+            True.
+    figname : string, optional
+            Filename of corner plot figure. Used if save argument is True.
+            If no file path is specified, then figure is saved to main_dir. 
+            Default is corner.pdf.
+    full_range : bool, optional
+            Show the complete fitting range (as contained in the results 
+            dictionary). If the range is broad and the models are localised 
+            this may lead to warning messages and hard to read figure. Default 
+            is False.
     '''
     current_dir = os.path.realpath('.')
     os.chdir(main_dir)
@@ -158,7 +190,7 @@ def plot_corner(main_dir, results=None, nburnin=0, range=None, show=True,
     samples = results['chain'][:, -nstep:, :].reshape((-1, results['ndim']))
 
     if range is None and full_range:
-        range = results['p_range']
+        range = results['p_ranges']
 
     fig1 = corner.corner(samples, labels=results['parname'],                                      
                          show_titles=True, quantiles=[0.16, 0.50, 0.84],

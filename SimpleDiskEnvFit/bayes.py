@@ -24,7 +24,19 @@ import os
 
 def lnpriorfn(p, par_ranges):
     """
-    Uniform prior probability function
+    Uniform prior probability function.
+    
+    If p (parameters) are outside of parameter range set prior, then return -Inf,
+    else return negative scalar.
+    
+    Parameters
+    ----------
+    p : list
+        Prior probability is returned for these parameters. Normally this is 
+        provided by the emcee sampler.
+    par_ranges : list or list of lists
+        Prior constraints. Assumption of parameter ranges. Should contain a 
+        range for each parameters.
     """
 
     for i in range(len(p)):
@@ -35,13 +47,53 @@ def lnpriorfn(p, par_ranges):
 
     return jacob
 
-def lnpostfn(p, p_ranges, parname, ppar, resource_dir, visdata,
+def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
              dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0,
              impar=None, verbose=False):
     """
-    Log of posterior probability function
+    Log of posterior probability function.
     
-    Note: visdata is a global variable defined in the script calling lnpostfn()
+    Parameters
+    ----------
+    p   :   list
+            Prior probability is returned for these parameters. Normally this is 
+            provided by the emcee sampler.
+    par_ranges : list or list of lists
+            Prior constraints. Assumption of parameter ranges. Should contain a 
+            range for each parameters.
+    parname : list of string
+            Names of fitted parameters following the radmc3dPy.modPar and 
+            getParam() conventions. This has to have the same number of elements 
+            as p.
+    modpar : radmc3dPy.radmc3dPar class object
+            Containing the base parameter values. These are common in all models 
+            within a run. The fitted parameters are updated according the values 
+            of p.
+    resource_dir : sting
+            Path (absolute or relative) to the folder containing additional 
+            files (e.g. dust opacity or lnk files) that are needed to create 
+            the model. Defaults to {SIMPLEDISKENVFIT_HOME}/lnk_files.
+    uvdata : dict or list of dict 
+            Containing observed visibility data. The 'u', 'v', 'Re', 'Im', 
+            'w' and 'wav' keywords need to be defined.
+    dpc  :  float
+            Distance to object in unit of parsec, Default is 1.0.
+    incl :  float
+            Model inclination in image, Default is 45.0.
+    PA   :  float, optional
+            Position angle in radian. Default is 0.0.
+    dRA  :  float, optional
+            Offset in RA in radian. Default is 0.0.
+    dDec :  float, optional
+            Offset in Dec in radian. Default is 0.0.
+    impar : dict or list of dict, optional
+            Image parameter(s). Known keywords are listed in the runImage()
+            method description. At least the wavelength (wav keyword) must 
+            be set for each images. Default is None.
+    verbose : bool, optional
+            If True, then print summary of model parameters to standard 
+            output. Runtime INFO messages are also printed to standard 
+            output. Default is False.
     """
     # Model ID
     rand = np.random.randint(0,99999)
@@ -70,27 +122,27 @@ def lnpostfn(p, p_ranges, parname, ppar, resource_dir, visdata,
             val = p[i]
         
         # Set the model parameters
-        if parname[i] in ppar.ppar.keys():
+        if parname[i] in modpar.ppar.keys():
             if type(val) is list:
-                ppar.setPar([parname[i], "{}".format(val)])
+                modpar.setPar([parname[i], "{}".format(val)])
             else:
-                ppar.setPar([parname[i], "{:10.6E}".format(val)])
+                modpar.setPar([parname[i], "{:10.6E}".format(val)])
         elif parname[i] =='gsmax_env':
-            tmp = ppar.ppar['gsmax']
+            tmp = modpar.ppar['gsmax']
             tmp[1] = val
-            ppar.setPar(['gsmax', "{}".format(tmp)])
+            modpar.setPar(['gsmax', "{}".format(tmp)])
         elif parname[i] =='gsmax_disk':
-            tmp = ppar.ppar['gsmax']
+            tmp = modpar.ppar['gsmax']
             tmp[0] = val
-            ppar.setPar(['gsmax', "{}".format(tmp)])
+            modpar.setPar(['gsmax', "{}".format(tmp)])
         elif parname[i] =='gsmin_env':
-            tmp = ppar.ppar['gsmin']
+            tmp = modpar.ppar['gsmin']
             tmp[1] = val
-            ppar.setPar(['gsmin', "{}".format(tmp)])
+            modpar.setPar(['gsmin', "{}".format(tmp)])
         elif parname[i] =='gsmin_disk':
-            tmp = ppar.ppar['gsmin']
+            tmp = modpar.ppar['gsmin']
             tmp[0] = val
-            ppar.setPar(['gsmin', "{}".format(tmp)])
+            modpar.setPar(['gsmin', "{}".format(tmp)])
         elif parname[i] == 'dpc':
             dpc = val
         elif parname[i] == 'incl':
@@ -134,23 +186,23 @@ def lnpostfn(p, p_ranges, parname, ppar, resource_dir, visdata,
     if verbose:
         print ('INFO [{:06}]: using dpc={} and incl={}'.format(rand, dpc, incl))
     
-    # Check visdata
+    # Check uvdata
 
 
-    # compute the model brightness profile
-    
-    mod = main.radmc3dModel(modpar=ppar, model_dir=model_dir, 
+    # compute the model brightness profile    
+    mod = main.radmc3dModel(modpar=modpar, model_dir=model_dir, 
                             resource_dir=resource_dir, 
                             ID = rand)
     mod.write2folder()
 
     mod.runModel(impar=impar, mctherm=True, nphot_therm=100000, verbose=verbose)
+
     # Use the correct distance
     if type(impar) == list:
         dpc_vis = impar[0]['dpc']
     else:
         dpc_vis = impar['dpc']
-    mod.getVis(visdata, dpc=dpc_vis, PA=PA, dRA=dRA, dDec=dDec)
+    mod.getVis(uvdata, dpc=dpc_vis, PA=PA, dRA=dRA, dDec=dDec)
 
     chi2 = -0.5 * np.sum(mod.chi2) + lnprior
     

@@ -31,9 +31,12 @@ def ulrich_envelope(grid, ppar, cavity=False):
     
     Parameters
     ----------
-      grid - radmc3dPy.grid object, initialized with the model boundaries.
-      ppar - dictionary provided by modpar.ppar (radmc3dPar object)
-      cavity - envelope model has cavity (default False)
+    grid : radmc3dPy.grid object
+           Initialized with the model boundaries.
+    ppar : dict
+           Dictionary provided by modPar.ppar (radmc3dPar object)
+    cavity : bool
+           If True, then envelope model has cavity. Default is False.
     '''
     rr, th = np.meshgrid(grid.x, grid.y, indexing='ij')
     z0 = np.zeros([grid.nx, grid.nz, grid.nz], dtype=np.float64)
@@ -67,9 +70,12 @@ def tafalla_envelope(grid, ppar, cavity=False):
     
     Parameters
     ----------
-      grid - radmc3dPy.grid object, initialized with the model boundaries.
-      ppar - dictionary provided by modpar.ppar (radmc3dPar object)
-      cavity - envelope model has cavity (default False)
+    grid : radmc3dPy.grid object
+           Initialized with the model boundaries.
+    ppar : dict
+           Dictionary provided by modPar.ppar (radmc3dPar object)
+    cavity : bool
+           If True, then envelope model has cavity. Default is False.
     '''
     rr, th = np.meshgrid(grid.x, grid.y, indexing='ij')
     z0 = np.zeros([grid.nx, grid.nz, grid.nz], dtype=np.float64)
@@ -104,9 +110,12 @@ def powerlaw_envelope(grid, ppar, cavity=False):
     
     Parameters
     ----------
-      grid - radmc3dPy.grid object, initialized with the model boundaries.
-      ppar - dictionary provided by modpar.ppar (radmc3dPar object)
-      cavity - envelope model has cavity (default False)
+    grid : radmc3dPy.grid object
+           Initialized with the model boundaries.
+    ppar : dict
+           Dictionary provided by modPar.ppar (radmc3dPar object)
+    cavity : bool
+           If True, then envelope model has cavity. Default is False.
     '''
     rr, th = np.meshgrid(grid.x, grid.y, indexing='ij')
     z0 = np.zeros([grid.nx, grid.nz, grid.nz], dtype=np.float64)
@@ -140,9 +149,12 @@ def envelope_cavity(rho, grid, ppar):
     
     Parameters
     ----------
-      rho - density distribution of an envelope ([nx, ny, nz, 1] dimension)
-      grid - radmc3dPy.grid object, initialized with the model boundaries.
-      ppar - dictionary provided by modpar.ppar (radmc3dPar object)
+    rho  : array_like, float
+           Density distribution of an envelope ([nx, ny, nz, 1] dimension)
+    grid : radmc3dPy.grid object
+           Initialized with the model boundaries.
+    ppar : dict
+           Dictionary provided by modPar.ppar (radmc3dPar object)
     '''
     
     dummy = rho[:,:,0,0]
@@ -176,8 +188,10 @@ def flaring_disk(grid, ppar):
     
     Parameters
     ----------
-      grid - radmc3dPy.grid object, initialized with the model boundaries.
-      ppar - dictionary provided by modpar.ppar (radmc3dPar object)
+    grid : radmc3dPy.grid object
+           Initialized with the model boundaries.
+    ppar : dict
+           Dictionary provided by modPar.ppar (radmc3dPar object)
     '''
     rr, th = np.meshgrid(grid.x, grid.y, indexing='ij')
     z0 = np.zeros([grid.nx, grid.nz, grid.nz], dtype=np.float64)
@@ -272,8 +286,10 @@ def computeEnvMass(grid, rho_env):
     
     Parameters
     ----------
-      grid    - radmc3dPy.grid object, initialized with the model boundaries.
-      rho_env - envelope density distribution
+    grid : radmc3dPy.grid object
+           Initialized with the model boundaries.
+    rho  : array_like, float
+           Density distribution of an envelope ([nx, ny, nz, 1] dimension)
     '''
     au = radmc3dPy.natconst.au
     vol  = grid.getCellVolume()
@@ -296,9 +312,13 @@ def ISradField(grid, ppar, G=1.7, show=False):
     
     Parameters
     ----------
-      grid - radmc3dPy.grid object, initialized with the model boundaries.
-      ppar - dictionary provided by modpar.ppar (radmc3dPar object)
-      G    - scale parameter of the FUV field (default G0, Draine field)
+    grid : radmc3dPy.grid object
+           Initialized with the model boundaries.
+    ppar : dict
+           Dictionary provided by modPar.ppar (radmc3dPar object)
+    ppar : float
+           Scale parameter of the interstellar radiation field. Default is G0, 
+           the Draine field.
     '''
     
     if 'G' in ppar.keys():

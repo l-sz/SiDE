@@ -136,16 +136,21 @@ def ulrich_envelope(rr,tt, Rc=4.4879e15, rho0=1.165e-20, rmin=None, rmax=None):
 
     Parameters
     ----------
-        rr:   radial coordinate in spherical coordinate system. The array is 
-              typically 2 dimensional (r,theta)
-        tt:   theta coordinate in spherical coordinate system, typically 
-              2 dimentional (r,theta)
-        Rc:   centrifugal radius (cm), default value is equal to 300 au
-        rho0: density factor (g cm^-3), user should take care 
-              whether gas + dust or dust only
-        rmin: inner radius (cm), if not set then min(rr) is used
-        rmax: outer radius (cm), if not set then max(rr) is used
-    
+    rr : array_like, float  
+         Radial coordinate in spherical coordinate system. The array is 
+         typically 2 dimensional (r,theta).
+    tt : array_like, float   
+         theta coordinate in spherical coordinate system, typically 2 
+         dimentional (r,theta).
+    Rc : float
+         centrifugal radius (cm), default value is equal to 300 au
+    rho0 : float 
+         Density factor (g cm^-3), user should take care whether gas + dust or 
+         dust only
+    rmin : float, optional
+         Inner radius (cm), if not set then min(rr) is used.
+    rmax : float, optional
+         Outer radius (cm), if not set then max(rr) is used.
     '''
     if not rmin:
        rmin = np.min(rr)

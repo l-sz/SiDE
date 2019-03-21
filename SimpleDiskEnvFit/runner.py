@@ -104,11 +104,22 @@ class radmc3dRunner:
         
         Parameters
         ----------
-          noscat       - set of scattering process (opacity)
-          nphot_therm  - set number of thermal photon packages
-          nphot_scat   - set number of photon packages used for scattering
-          nphot_mcmono - set number of photon packages in monochromatic MC 
-                         simulation.
+        noscat : int, optional
+                Switch off scattering process even if dust opacity file contains 
+                scattering cross sections. If None, then option from radmc3d.inp 
+                is used.
+        nphot_therm : int, optional
+                Set number of thermal photon packages. If None, then option from 
+                radmc3d.inp is used.
+                Note: as of RADMC-3D version 0.41 setting nphot_therm in child 
+                mode is not supported. If code crashes, set this to None and 
+                adjust nphot_therm in the radmc3dPy parameter file.
+        nphot_scat : int, optional
+                Set number of photon packages used for scattering. If None, then 
+                option from radmc3d.inp is used.
+        nphot_mcmono : int, optional
+                Set number of photon packages in monochromatic MC simulation. 
+                If None, then option from radmc3d.inp is used.
         '''
         current_dir = os.path.realpath('.')
         if verbose:
@@ -148,6 +159,36 @@ class radmc3dRunner:
         
         Based on the radmc3dPy.image.makeImage() function and the parameters 
         have the same meaning.
+        
+        Parameters
+        ----------
+        npix :  int, optional
+                Pixel number (same along x and y).
+        incl :  float, optional
+                Model inclination.
+        wav :   float
+                Frequency where image is computed. Minimally wav must be set.
+        sizeau : float or None(optional)
+                Image size in physical scale, in unit of AU
+        phi :   float, optional
+                
+        posang : float, optional
+        pointau : float, optional
+        fluxcons : bool (default True)
+                If True, then ensure flux conversion (see RADMC3D manual).
+        nostar : bool (default False)
+                If True, then do not include stellar radiation in image.
+        noscat : bool (default False)
+                If True, then omit scattering, even if scattering data is given 
+                in opacity input file.
+        lambdarange : ndarray or None
+                If set then compute multiple images at wavelengths given by 
+                lambdarange.
+        nlam :  int or None
+                
+        stokes : bool (default False)
+                
+        **arg : further arguments are not used
         '''
 
         self.proc.stdin.write(b"image\n")
@@ -294,6 +335,11 @@ class radmc3dRunner:
         radmc3dImage object.
         
         getImage() takes the same arguments as runImage() and radmc3dPy.image.makeImage().
+        
+        Parameters
+        ----------
+        **arg : dict
+                arguments passed to runImage() class method.
         '''
         # Compute image
         self.runImage(**args)

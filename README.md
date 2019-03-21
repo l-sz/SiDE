@@ -42,7 +42,17 @@ Installation:
 
 Download the repository in your browser or using the git clone utility.
 
-Add the repository location to your PYTHONPATH:
+Use Python's distutil utility and the provided setup.py script. 
+
+```
+$ python setup.py install --user
+```
+
+On linux this 
+installes the module to ~/.local/lib/python{2.7/3.6}/site-packages directory, 
+which is usually included in the python search path.
+
+Alternatively, you may directly add the repository location to your PYTHONPATH:
 
 ```
 $ export PYTHONPATH=$PYTHONPATH:/path/to/your/SimpleDiskEnvFit/directory
@@ -50,7 +60,7 @@ $ export PYTHONPATH=$PYTHONPATH:/path/to/your/SimpleDiskEnvFit/directory
 You can make this addition permanent by saving the export command to the 
 ~/.bashrc or ~/.profile files.
 
-After completing this step, the module should be available in python:
+After completing the installation step, the module should be available in python:
 
 ```
 import SimpleDiskEnvFit

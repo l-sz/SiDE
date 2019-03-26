@@ -31,8 +31,8 @@ Requirements:
 - [radmc3dPy](https://www.ast.cam.ac.uk/~juhasz/radmc3dPyDoc)
 - [galario](https://github.com/mtazzari/galario) 
 - [uvplot](https://github.com/mtazzari/uvplot)
-- emcee (optional)
-- jupyter (optional)
+- emcee (optional, used for MCMC fitting)
+- mpi4py (optional, used for emcee parallelism)
 
 - [RADMC3D](http://www.ita.uni-heidelberg.de/~dullemond/software/radmc-3d)
 

@@ -1,16 +1,16 @@
 SimpleDiskEnvFit
 ================
 
-Self-contained radmc3dModel with child-mode RADMC3D runner and with 
-image, visibility and chi^2 storage.
-The user provides a radmc3dPar() object and optional observed     
+Self-contained `radmc3dModel` with child-mode RADMC3D runner and with 
+image, visibility and \chi^2 storage.
+The user provides a `radmc3dPar` object and optional observed     
 constrains in the uv space. The code computes density structure, 
 dust opacity and writes to disk. Then the runner computes dust 
 temperature and continuum images. The images are transformed to the 
 uv space and the chi2 is computed compared to the input observations.
 
-Based on SimpleDiskEnv. The code is intended to be used with the 
-emcee MCMC sampler tool.
+Based on [SimpleDiskEnv](https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnv). 
+The code is intended to be used with the `emcee` MCMC sampler tool.
 
 Features and options:
 --------------------
@@ -19,7 +19,7 @@ Features and options:
 - Disk model: parametric disk with hydrostatic-like vertical distribution
 - Compute dust opacity using Mie theory on the fly
 - Compute dust continuum emission maps and complex visibilities
-- Compute chi^2 when observed complex visibilities are provided
+- Compute \chi^2 when observed complex visibilities are provided
 
  
 Requirements:
@@ -44,7 +44,7 @@ Download the repository in your browser or using the git clone utility.
 
 Use Python's distutil utility and the provided setup.py script. 
 
-```
+```bash
 $ python setup.py install --user
 ```
 
@@ -54,7 +54,7 @@ which is usually included in the python search path.
 
 Alternatively, you may directly add the repository location to your PYTHONPATH:
 
-```
+```bash
 $ export PYTHONPATH=$PYTHONPATH:/path/to/your/SimpleDiskEnvFit/directory
 ```
 You can make this addition permanent by saving the export command to the 
@@ -62,7 +62,7 @@ You can make this addition permanent by saving the export command to the
 
 After completing the installation step, the module should be available in python:
 
-```
+```python
 import SimpleDiskEnvFit
 ```
 
@@ -71,7 +71,7 @@ Basic usage:
 
 Load default parameter configuration (disk and envelope included, no cavity) and 
 modify the disk mass and radius and the envelope reference density.
-```
+```python
 import SimpleDiskEnvFit
 import numpy as np
 
@@ -82,7 +82,7 @@ par.setPar(['rdisk', '100.*au', ' Disk radius', 'Disk parameters'])
 par.setPar(['rho0Env', '1e-20', ' Envelope reference density [g/cm^3]', 'Envelope parameters'])
 ```
 
-Create the radmc3dModel object and print model information (included components, 
+Create the `radmc3dModel` object and print model information (included components, 
 component masses, densities, etc.). Then write the model to current folder (note 
 that files need to be written to hard drive before the dust temperature and 
 images are computed).
@@ -94,7 +94,7 @@ mod.write2folder()
 
 Read observed visibility data (obtained at 1.1 and 3 mm wavelength) and set 
 image parameters.
-```
+```python
 u1, v1, Re1, Im1, w1 = np.loadtxt('Elias29uvt_270.txt', unpack=True)
 u2, v2, Re2, Im2, w2 = np.loadtxt('Elias29uvt_94.txt', unpack=True)
 
@@ -107,16 +107,16 @@ impar = [{'npix':512,'wav':1100.,'sizeau':6000,'incl':60},
 
 Compute the dust temperature and the dust continuum emission. Then decompose the 
 images to complex visibility space. The computed images are stored in the mod.image 
-class variable (list type). The individual images are radmc3dImage objects. It is 
-possible to use the standard radmc3dPy methods on the images (e.g. to write to fits 
+class variable (list type). The individual images are `radmc3dImage` objects. It is 
+possible to use the standard `radmc3dPy` methods on the images (e.g. to write to fits 
 file format).
-```
+```python
 mod.runModel(mctherm=True,impar=impar)
 mod.getVis(uvdata=vis, dpc=125.)
 ```
 
 Finally, compare the observed and modelled visibilities.
-```
+```python
 uvbin = 10000
 ax0 = mod.vis_inp[0].plot(uvbin_size=uvbin, label='1.1 mm')
 mod.vis_mod[0].plot(uvbin_size=uvbin, axis=ax0, linestyle='r-')
@@ -124,6 +124,54 @@ mod.vis_mod[0].plot(uvbin_size=uvbin, axis=ax0, linestyle='r-')
 ax1 = mod.vis_inp[1].plot(uvbin_size=uvbin), label='3 mm'
 mod.vis_mod[1].plot(uvbin_size=uvbin, axis=ax1, linestyle='r-')
 ```
+
+Example: Fitting Elias 29:
+-------------------------
+
+The examples folder contains the parameter file, fitting scripts, opacity data 
+and observed complex visibilities for modelling the Class I protostar Elias 29.
+
+Contents of the `examples/elias29` folder:
+
+    elias29_params.inp              Default model parameters 
+    porous_natta2004_rhod_1.36.lnk  Complex refractive index data of dust grains
+    Elias29uvt_270.txt              Observed complex visibility at 1.1 mm wavelength 
+    Elias29uvt_94.txt               Observed complex visibility at 3.0 mm wavelength
+
+
+The `fit_elias29.py` file contains the `run_mcmc()` function, which is tailord 
+for fitting the Elias 29 data and the `plot_corner()` function for plotting the 
+result posterior probability density distribution. The routines may be imported 
+in interactive Python shell or run as a script. In the later case, the fitting 
+parameters (nwalkers, nthreads, nsteps, use_mpi, etc.) should be set in the .
+
+The `elias29_slurm.sh` provides an example for configuring and running the script 
+on a cluster (CCAS at MPCDF) with SLURM schedulling system.
+
+To run the script in MPI mode use one of the following commands:
+
+```bash
+# Without schedulling system, using 8 threads
+mpirun -n 8 python fit_elias29.py 
+
+# With SLURM system
+sbatch elias29_slurm.sh
+```
+
+Make sure that the call to `run_mcmc()` has use_mpi=True and that in the elias29_slurm.sh 
+script the partition, ntasks-per-node, nodes parameters are set correctly and 
+that the srun -n argument reflects the choice of the above parameters.
+
+**Genetal notes**
+
+The minimally required files for the fitting are the parameter file (\*param.inp) 
+and the observational constraints (\*.txt). If the grain size distribution is 
+fitted, then a file containing the complex index of refraction need to be provided. 
+SimpleDiskEnvFit is distributed with the astronomical silicate dust model of 
+Draine & Lee (2003) and the porous silicate:carbon:ice:vacuum (1:2:3:6) dust 
+model used in Natta & Testi (2004). 
+
+
 
 Acknowledgement:
 ---------------

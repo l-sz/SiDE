@@ -125,7 +125,7 @@ ax1 = mod.vis_inp[1].plot(uvbin_size=uvbin), label='3 mm'
 mod.vis_mod[1].plot(uvbin_size=uvbin, axis=ax1, linestyle='r-')
 ```
 
-Example: Fitting Elias 29:
+Example: Fitting Elias 29
 -------------------------
 
 The examples folder contains the parameter file, fitting scripts, opacity data 
@@ -146,12 +146,12 @@ in interactive Python shell or run as a script. In the later case, the fitting
 parameters (nwalkers, nthreads, nsteps, use_mpi, etc.) should be set in the .
 
 The `elias29_slurm.sh` provides an example for configuring and running the script 
-on a cluster (CCAS at MPCDF) with SLURM schedulling system.
+on a cluster (CCAS at MPCDF) with SLURM scheduling system.
 
 To run the script in MPI mode use one of the following commands:
 
 ```bash
-# Without schedulling system, using 8 threads
+# Without scheduling system, using 8 threads
 mpirun -n 8 python fit_elias29.py 
 
 # With SLURM system
@@ -162,7 +162,7 @@ Make sure that the call to `run_mcmc()` has use_mpi=True and that in the elias29
 script the partition, ntasks-per-node, nodes parameters are set correctly and 
 that the srun -n argument reflects the choice of the above parameters.
 
-**Genetal notes**
+**General notes**
 
 The minimally required files for the fitting are the parameter file (\*param.inp) 
 and the observational constraints (\*.txt). If the grain size distribution is 

@@ -1,11 +1,12 @@
+#!/bin/bash -l
+
+#
 ## SimpleDiskEnvFit example to submit fitting job on SLURM
 ##
 ## Run fitting on 80 cores of 2 nodes.
 ##
 ## Tested on ccas cluster at MPCDF
 
-#!/bin/bash -l
-#
 #SBATCH --job-name=faust-elias29
 #SBATCH --time=24:00:00
 #SBATCH --partition=ccas256

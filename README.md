@@ -25,17 +25,28 @@ Features and options:
 Requirements:
 ------------
 
+- [RADMC-3D](http://www.ita.uni-heidelberg.de/~dullemond/software/radmc-3d/)
 - python (2.7 or 3.6+)
 - matplotlib
 - numpy
 - [radmc3dPy](https://www.ast.cam.ac.uk/~juhasz/radmc3dPyDoc)
 - [galario](https://github.com/mtazzari/galario) 
 - [uvplot](https://github.com/mtazzari/uvplot)
-- emcee (optional, used for MCMC fitting)
+- [emcee](http://dfm.io/emcee) (used for MCMC fitting)
+- [corner](https://corner.readthedocs.io)
 - mpi4py (optional, used for emcee parallelism)
 
 - [RADMC3D](http://www.ita.uni-heidelberg.de/~dullemond/software/radmc-3d)
 
+**Importnat:** 
+
+The current release of RADMC-3D (version 0.41) needs to be patched before model 
+fitting. Replace `main.f90` with `radmc3d_path_main.f90` in  
+```bash
+$RADMC3D_PATH/version_0.41/src
+```
+folder and recompile code. The patch is already merged to the developement 
+branch of RADMC-3D, but have not been released yet.
 
 Installation:
 ------------

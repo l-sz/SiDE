@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(name='SimpleDiskEnvFit',
       version='0.1',
-      requires=['radmc3dPy', 'corner', 'galario', 'emcee','uvplot'],
+      requires=['radmc3dPy', 'corner', 'galario', 'emcee', 'uvplot'],
       description='RADMC3D based Class 0/I/II protostar fitting tool.',
       author='Laszlo Szucs',
       author_email='laszlo.szucs@mpe.mpg.de',

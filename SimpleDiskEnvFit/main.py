@@ -731,7 +731,7 @@ class radmc3dModel:
         
         return 0
         
-    def getVis(self, uvdata, dpc=1.0, PA=0., dRA=0.0, dDec=0.0):
+    def getVis(self, uvdata, dpc=1.0, PA=0., dRA=0.0, dDec=0.0, useCUDA=False):
         '''
         Compute visibility of previously computed images and their chi2 
         compared to observations, using the Galario library.
@@ -765,6 +765,9 @@ class radmc3dModel:
             for im in self.image:
                 wav_arr.append(im.wav[0])
 
+            # Set galario threads to 1, parallelisation is done by emcee and MPI
+            galario.double.threads(1)
+
             for uv in uvdata:
                 
                 # extract uv data from dictionary
@@ -796,8 +799,7 @@ class radmc3dModel:
             
                 dxy = self.image[iim].sizepix_x / nc.au / dpc / 3600. * galario.deg
         
-                vis = galario.double.sampleImage( imJyppix, dxy, u/wle, v/wle,
-                                                  check=True )
+                vis = sampleImage( imJyppix, dxy, u/wle, v/wle, check=True )
     
                 self.vis_mod.append( uvplot.UVTable(uvtable=[u, v, vis.real,
                                         vis.imag, w], wle=wle,
@@ -806,9 +808,8 @@ class radmc3dModel:
                                         Im, w], wle=wle,
                                         columns=uvplot.COLUMNS_V0) )
 
-                chi2 = galario.double.chi2Image( imJyppix, dxy, u/wle, v/wle, 
-                                                  Re, Im, w, dRA=dRA, dDec=dDec,
-                                                  PA=PA )
+                chi2 = chi2Image( imJyppix, dxy, u/wle, v/wle, Re, Im, w, 
+                                 dRA=dRA, dDec=dDec, PA=PA )
                 self.chi2.append(chi2)
 
         return 0

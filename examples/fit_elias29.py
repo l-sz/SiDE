@@ -11,17 +11,9 @@ from emcee.utils import MPIPool
 import corner
 from galario import arcsec, deg
 
-'''
-TODO: save current position and probability to file. This should be readable by 
-      the code to resume computation (useful when the cluster job runtime is limited 
-      to 1 day).
-      To avoid too frequent writes, store results and write after every 10 or 100 
-      steps. (need to be tested)
-      Individual models are not useful add option to delete already used model.
-'''
-
 def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
-             plot=True, use_mpi=False, resume=False, chain_file='chain.dat'):
+             plot=False, use_mpi=False, resume=False, chain_file='chain.dat',
+             restart_file='chain.dat'):
     '''
     Computes posteriori probabilities of parametrised Class 0/I models given 
     a set of observational constraints using SimpleDiskEnvFit.
@@ -61,7 +53,14 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
             The file can be used to restart or continue MCMC sampling.
             Meaning of columns: walker index (1), parameter value (n), 
             log probability (1).
-            If file already exists then output is automatically renamed.
+            If file already exists then output is automatically renamed, 
+            this is done in order not to overwrite previous results and 
+            the restart_file (see below).
+            Default is "chain.dat".
+    restart_file: string, optional
+            When restarting (resume = True), then results from previous 
+            run are read from restart_file. If resume parameter is set 
+            True, then file must exist.
             Default is "chain.dat".
     '''
     if use_mpi:
@@ -107,7 +106,8 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
 
     # Set parameters for bayes.lnpostfn() function
     kwargs = {'dpc': 125., 'incl': 67., 'impar': impar, 'verbose': True, 
-              'PA':0.0, 'dRA':0.48*arcsec, 'dDec':0.98*arcsec}
+              'PA':0.0, 'dRA':0.48*arcsec, 'dDec':0.98*arcsec,
+              'cleanModel': True }
 
     # If projection parameters are not known
     #parname = ['mdisk','rho0Env','gsmax_disk','gsmax_env','PA',
@@ -136,7 +136,13 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
 
     # initialize the walkers with an ndim-dimensional Gaussian ball
     if resume:
-        raise ValueError('resume = True not yet implemented!')
+        resume_data = read_chain_file(restart_file)
+        if nwalkers != resume_data['nwalkers']:
+            raise ValueError('ERROR: walker number does not match resume file.')
+        pos = []
+        for pv in resume_data['chain'][:,-1,:]:
+            pos.append(pv)
+        lnprob0 = resume_data['lnprob'][:,-1]
     else:
         pos = [p0 + 1.0e-2*np.random.randn(ndim) for i in range(nwalkers)]
         lnprob0 = None
@@ -171,15 +177,17 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
 
     print ("INFO [{:06}]: RUN {} main steps".format(0,nsteps))
 
-    for step in sampler.sample(pos, iterations=nsteps, lnprob0=lnprob0):
+    f = open(chain_file, "a")
+
+    for step in sampler.sample(pos, iterations=nsteps, lnprob0=lnprob0):
         position = step[0]
         lnprob = step[1]
         print (step[2])
-        f = open(chain_file, "a")
         for k in range(nwalkers):
             posstr = ''.join(np.vectorize("%12.5E ".__mod__)(position[k]))
             f.write("{:04d} {:s}{:12.5E}\n".format(k, posstr, lnprob[k]))
-        f.close()
+
+    f.close()
 
     print ("INFO [{:06}]: DONE {} main steps".format(0,nsteps))
 
@@ -188,6 +196,10 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
         pool.close()
 
     chain = sampler.chain[:, :, :]
+    
+    if resume:
+        chain = np.concatenate( (resume_data['chain'], chain), axis=1 )
+        nsteps = nsteps + resume_data['nsteps']
 
     # Save results
     results = {'chain': chain, 'parname':parname, 'p_ranges':p_ranges, 'p0':p0,
@@ -277,6 +289,43 @@ def plot_corner(main_dir, results=None, nburnin=0, range=None, show=True,
 
     return
 
+def read_chain_file(chain_file='chain.dat'):
+    '''
+    Reads data from chain file and prepares pos0 and lnprob0 for restarting 
+    the MCMC run. It also returns an array with previous results to be merged 
+    with new probability estimations for plotting.
+
+    Some metadata is returned (nthreads, nwalker, nstep, MPI).
+    '''
+    
+    data = np.loadtxt(chain_file)
+    
+    iwalker = np.int32( data[:,0] )
+    pos0 = data[:,1:-1]
+    lnprob0 = data[:,-1]
+    
+    # Determine MCMC parameters
+    nwalkers = iwalker.max() + 1
+    ndim = pos0.shape[1]
+    nsteps = np.int32(pos0.shape[0] / nwalkers)
+
+    chain = np.empty((nwalkers, nsteps, ndim))
+    lnprob = np.empty((nwalkers,nsteps))
+    
+    for i in range(nwalkers):
+        loc = np.where( i == iwalker )
+        chain[i,:,:] = pos0[loc,:]
+        lnprob[i,:] = lnprob0[loc]
+    
+    # TODO: read it from file header
+    use_mpi = True
+    
+    return {'chain': chain, 'lnprob': lnprob, 'nwalkers': nwalkers, 
+            'nsteps': nsteps, 'ndim': ndim,'use_mpi': use_mpi}
+
 if __name__ == "__main__":
     current_dir = os.path.realpath('.')
     run_mcmc(current_dir+'/elias29', use_mpi=True)
+    # Resume example
+    #run_mcmc(current_dir+'/elias29', nsteps=300, nburnin=0, use_mpi=True, 
+    #         resume=True, restart_file=current_dir+'/elias29/chain_0.dat')

@@ -49,7 +49,7 @@ def lnpriorfn(p, par_ranges):
 
 def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
              dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0,
-             impar=None, verbose=False):
+             impar=None, verbose=False, cleanModel=False):
     """
     Log of posterior probability function.
     
@@ -203,6 +203,10 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     else:
         dpc_vis = impar['dpc']
     mod.getVis(uvdata, dpc=dpc_vis, PA=PA, dRA=dRA, dDec=dDec)
+
+    # Delete model folder from disk if requested
+    if cleanModel:
+        mod.cleanModel()
 
     chi2 = -0.5 * np.sum(mod.chi2) + lnprior
     

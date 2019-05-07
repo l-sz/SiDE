@@ -750,17 +750,17 @@ class radmc3dModel:
         dDec :  float, optional
                 Offset in Dec in radian. Default is 0.0.
         '''
-        
+
         if self.image is None:
-            
+
             print ("WARN [{:06}]: No images stored in object!".format(self.ID)) 
             pass
-            
+
         else:
-            
+
             if type(uvdata) == dict:
                 uvdata = [uvdata]
-            
+
             wav_arr = []
             for im in self.image:
                 wav_arr.append(im.wav[0])
@@ -769,7 +769,7 @@ class radmc3dModel:
             galario.double.threads(1)
 
             for uv in uvdata:
-                
+
                 # extract uv data from dictionary
                 u = np.ascontiguousarray(uv['u'])
                 v = np.ascontiguousarray(uv['v'])
@@ -777,7 +777,7 @@ class radmc3dModel:
                 Im = np.ascontiguousarray(uv['Im'])
                 w = np.ascontiguousarray(uv['w'])
                 wav = uv['wav']
-                
+
                 # Find image for uv wavelength
                 try:
                     iim = wav_arr.index(wav)
@@ -785,7 +785,7 @@ class radmc3dModel:
                     print ('WARN [{:06}]: micron image not found,\
                            continue...'.format(self.ID, wav))
                     continue
-                
+
                 if self.vis_mod is None:
                     self.vis_mod = []
                 if self.vis_inp is None:
@@ -794,13 +794,14 @@ class radmc3dModel:
                     self.chi2 = []
 
                 wle = wav * 1.0e-6
-            
+
                 imJyppix = self.image[iim].imageJyppix[:,:,0] / dpc**2
-            
+
                 dxy = self.image[iim].sizepix_x / nc.au / dpc / 3600. * galario.deg
-        
-                vis = sampleImage( imJyppix, dxy, u/wle, v/wle, check=True )
-    
+
+                vis = galario.double.sampleImage( imJyppix, dxy, u/wle, v/wle, 
+                                                  check=True )
+
                 self.vis_mod.append( uvplot.UVTable(uvtable=[u, v, vis.real,
                                         vis.imag, w], wle=wle,
                                         columns=uvplot.COLUMNS_V0) )
@@ -808,56 +809,56 @@ class radmc3dModel:
                                         Im, w], wle=wle,
                                         columns=uvplot.COLUMNS_V0) )
 
-                chi2 = chi2Image( imJyppix, dxy, u/wle, v/wle, Re, Im, w, 
-                                 dRA=dRA, dDec=dDec, PA=PA )
+                chi2 = galario.double.chi2Image( imJyppix, dxy, u/wle, v/wle, 
+                                                 Re, Im, w, dRA=dRA, dDec=dDec, 
+                                                 PA=PA )
                 self.chi2.append(chi2)
 
         return 0
-    
+
     def cleanModel(self):
         '''
         Delete model directory
         '''
-        
+
         current_dir = os.path.realpath('.')
 
         if current_dir != self.model_dir:
 
             rmtree(self.model_dir)
-        
+
         else:
             print("WARN [{:06}]: Folder cannot be deleted!".format(self.ID))
 
         os.chdir(current_dir)
-        
+
         return 0
-    
-    
+
     def computeOpac(self):
         '''
         Compute dust opacity on the fly according to parameters defined in the 
         self.modpar object.
-        
+
         The code search the lnk file in the current folder first. If not found then
         it looks for it in the resource_dir folder.
-        
+
         Currently single grain size is supported and the code requires the 
         Fortran implementation of the Mie scattering code in radmc3dPy.
         '''
         par = self.modpar.ppar
-        
+
         if self.grid is None:
             raise ValueError('ERROR [computeOpac()]: set up model grid first!')
         else:
             lamcm = self.grid.wav * 1.0e-4
-        
+
         if 'lnk_fname' in par.keys():
-            
+
             lnk_fname = par['lnk_fname']
-            
+
             if isinstance(lnk_fname, str):
                 lnk_fname = [lnk_fname]
-            
+
             if 'gdens' in par.keys():
                 matdens = par['gdens']
                 if type(matdens) is not list:
@@ -866,7 +867,7 @@ class radmc3dModel:
                 matdens = [3.0]
                 print ("WARN [{:06}]: gdens not defined in parameter file, \
                         using {:.2} g/cm^3".format(self.ID, matdens[0]))
-                
+
             if 'gsmin' in par.keys():
                 gsmin = par['gsmin']
                 if type(gsmin) is not list:
@@ -875,7 +876,7 @@ class radmc3dModel:
                 gsmin = [0.1 * 1.0e-4] # 0.1 micron converted to cm
                 print ("WARN [{:06}]: gsmin not defined in parameter file, \
                            using {:.2} cm".format(self.ID, gsmin[0]))
-            
+
             if 'gsmax' in par.keys():
                 gsmax = par['gsmax']
                 if type(gsmax) is not list:
@@ -884,7 +885,7 @@ class radmc3dModel:
                 gsmax = [0.1 * 1.0e-4] # 0.1 micron converted to cm
                 print ("WARN [{:06}]: gsmax not defined in parameter file, \
                            using {:.2} cm".format(self.ID, gsmax[0]))
-            
+
             if 'ngs' in par.keys():
                 ngs = par['ngs']
                 if type(ngs) is not list:
@@ -893,7 +894,7 @@ class radmc3dModel:
                 ngs = [1]
                 print ("WARN [{:06}]: ngs not defined in parameter file, \
                            using {:.2} grain sizes".format(self.ID, ngs[0]))
-                
+
             if 'gsdist_powex' in par.keys():
                 gsdist_powex = par['gsdist_powex']
                 if type(gsdist_powex) is not list:
@@ -909,7 +910,7 @@ class radmc3dModel:
                 ngpop = 1
                 print ("WARN [{:06}]: ngpop not defined in parameter file, \
                            using {:2} dust species".format(self.ID, ngpop))
-            
+
             # If multiple grain populations are computed, then make sure that all 
             # required input list has enough elements:
             if ngpop > 1:
@@ -919,10 +920,10 @@ class radmc3dModel:
                 if len(gsmin) == 1    : gsmin = gsmin * ngpop
                 if len(ngs) == 1      : ngs = ngs * ngpop
                 if len(gsdist_powex) == 1 : gsdist_powex = gsdist_powex * ngpop
-            
+
             # Loop over grain populations
             for i in range(ngpop):
-                
+
                 # Loop variables
                 lnk = lnk_fname[i]
                 ngb = ngs[i]
@@ -930,16 +931,16 @@ class radmc3dModel:
                 amax = gsmax[i]
                 mtd = matdens[i]
                 pla = gsdist_powex[i]
-                
+
                 # Grain sizes
                 agr = np.logspace(np.log10(amin), np.log10(amax), ngb)
-                
+
                 # Compute weighting factors
                 pwgt = (pla - 2.0) / 3.0 + 2.0
                 mgra = (4.0/3.0*np.pi) * agr**3 * mtd
                 dum  = (mgra / mgra[0])**pwgt
                 mwgt = dum / np.sum(dum)
-                
+
                 # Find file in local or main directory
                 if os.path.isfile(lnk):
                     fname = lnk
@@ -952,17 +953,17 @@ class radmc3dModel:
 
                 # Loop over grain sizes
                 for j in range(ngb):
-                    
+
                     opac_tmp = radmc3dPy.miescat.compute_opac_mie(fname=fname,
                                                              matdens=mtd,
                                                              agraincm=agr[j],
                                                              lamcm=lamcm,
                                                              extrapolate=True)
-                    
+
                     kabs += mwgt[j] * opac_tmp['kabs']
                     ksca += mwgt[j] * opac_tmp['kscat']
                     gsca += mwgt[j] * opac_tmp['gscat']
-                
+
                 # Save grain population data
                 self.opac.kabs.append( kabs )
                 self.opac.ksca.append( ksca )
@@ -973,16 +974,16 @@ class radmc3dModel:
                 self.opac.scatmat.append( False )
                 self.opac.phase_g.append( gsca )
                 self.opac.idust.append( i )
-                
+
                 self.opac.ext.append("amin_{:06.3E}_amax_{:06.3E}_pl{:04.2}".format(amin,amax,pla))
-            
+
             # Save computed opacities
             self.opac_files = self.opac.ext
-                
+
         else:
             # No lnk_fname specified, continue
             pass
-        
+
         return 0
 
 
@@ -999,10 +1000,10 @@ def getParams(paramfile=None):
                 Name of parameter file (usually problem_params.inp). If file is 
                 not set (None) then load defaults. Default is None.
     '''
-    
+
     # Read the parameters from the problem_params.inp file 
     modpar = radmc3dPy.analyze.radmc3dPar()
-    
+
     if paramfile is not None:
         modpar.readPar(fname=paramfile)
     else:
@@ -1104,7 +1105,7 @@ def getParams(paramfile=None):
         modpar.setPar(['redFactEnv', '1.0e-2', 
                        ' Density is reduced by this factor if r < rTrunEnv', 
                        'Envelope parameters'])
-        
+
         # Disk parameters
         modpar.setPar(['idisk','True',' Include disk in model?',
                        'Disk parameters'])
@@ -1128,7 +1129,6 @@ def getParams(paramfile=None):
         modpar.setPar(['plsig2', '-40.0', 
                        ' Power law exponent at r > rdisk (abrubt cutoff at rdisk is not realistic)', 
                        'Disk parameters'])
-        
+
     # Return
     return modpar
-        

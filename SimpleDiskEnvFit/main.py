@@ -48,6 +48,7 @@ class radmc3dModel:
     Plotting routines should be added in the future.
     '''
     ID = None
+    verbose = None
     
     # radmc3dPy objects
     modpar = None
@@ -143,6 +144,9 @@ class radmc3dModel:
             self.ID = np.random.randint(0,99999)
         else:
             self.ID = ID
+            
+        # Set verbosity
+        self.verbose = verbose
         
         # Create empty model
         self.grid = radmc3dPy.analyze.radmc3dGrid()
@@ -221,7 +225,7 @@ class radmc3dModel:
         model_dir : string
                 Path to model to be read.
         '''
-        print ('INFO [{:06}]: This function is not implemented yet!'.format(ID))
+        print ('WARN [{:06}]: This function is not implemented yet!'.format(ID))
         
         return 0
 
@@ -358,7 +362,8 @@ class radmc3dModel:
         fname : string (default external_source.inp)
                 Name of output file
         '''
-        print('INFO [{:06}]: Writing {}'.format(self.ID, fname))
+        if self.verbose:
+            print('INFO [{:06}]: Writing {}'.format(self.ID, fname))
         
         wfile = open(fname, 'w')
         wfile.write('%d\n'%2)     # this is the format, should be 2 always
@@ -419,12 +424,11 @@ class radmc3dModel:
             self.write2folder()
             
         return 0
-        
-        
+
     def write2folder(self, write_param=False):
         '''
         Write RADMC-3D model to model_dir folder.
-        
+
         Parameters
         ----------
         write_param : bool, optional
@@ -438,35 +442,41 @@ class radmc3dModel:
         if not os.path.isdir(self.model_dir):
             os.makedirs(self.model_dir)
         os.chdir(self.model_dir)
-        
+
+        # Suppress radmc3dPy prints
+        blockPrint()
+
         # Frequency grid
         self.grid.writeWavelengthGrid(old=False)
         # Spatial grid
         self.grid.writeSpatialGrid(old=False)
         # Internal radiation field
         self.radsource.writeStarsinp(old=False)
-        
-        if self.modpar.ppar['iext']:
-            self._writeSourceExternal()
-        
+
         # Dust density distribution
         self.data.writeDustDens(binary=False, old=False)
-        
+
         # radmc3d.inp
         radmc3dPy.setup.writeRadmc3dInp(modpar=self.modpar)
-        
+
         # Master dust opacity file
         self.opac.writeMasterOpac(ext=self.opac_files, 
                              scattering_mode_max=
                              self.modpar.ppar['scattering_mode_max'], 
                              old=False)
-                
+
         # if parameter file doesn't exist write as well.
         if (not os.path.isfile('problem_params.inp')) or write_param:
             self.modpar.writeParfile('problem_params.inp')
-        
+
+        # Enable print messages on standard output
+        enablePrint()
+
+        if self.modpar.ppar['iext']:
+            self._writeSourceExternal()
+
         os.chdir(current_dir)
-        
+
         #
         # The following methods take care of finding self.model_dir themselves
         #
@@ -474,9 +484,9 @@ class radmc3dModel:
         self.writeOpac()
         # Copy opacity files if they are specified in parameters
         self.copyOpac(path=self.resource_dir)
-        
+
         return 0
-    
+
     def infoModelParams(self):
         '''
         Print model parameters (grid, star, disk, envelope) and computed values 
@@ -628,7 +638,8 @@ class radmc3dModel:
             ngpop = self.modpar.ppar['ngpop']
             
             for i in range(ngpop):
-                print ('INFO [{:06}]: Writing dustkappa_{}.inp'.format(self.ID, self.opac_files[i]))
+                if self.verbose:
+                    print ('INFO [{:06}]: Writing dustkappa_{}.inp'.format(self.ID, self.opac_files[i]))
                 self.opac.writeOpac(ext=self.opac_files[i], idust=i)
         
         else:
@@ -642,7 +653,7 @@ class radmc3dModel:
         
     def runModel(self, bufsize=500000, nthreads=1, radmc3dexec=None,
                  mctherm=True, noscat=None, nphot_therm=None, nphot_scat=None,
-                 nphot_mcmono=None, impar=None, verbose=False):
+                 nphot_mcmono=None, impar=None, verbose=None):
         '''
         Run Monte Carlo dust radiation transport to determine dust temperature 
         and / or compute image according impar dictionary.
@@ -685,13 +696,17 @@ class radmc3dModel:
         verbose : bool, optional
                 Print INFO messages to standard output. Default is False.
         '''
+        # If verbosity not set then use global class variable
+        if verbose is None:
+            verbose = self.verbose
+        
         current_dir = os.path.realpath('.')
         os.chdir(self.model_dir)
         
         # Initialize radmc3dRunner
         self.rrun = runner.radmc3dRunner(model_dir=self.model_dir, bufsize=500000,
                                          nthreads=1, radmc3dexec=None, 
-                                         ID=self.ID)
+                                         ID=self.ID, verbose=verbose)
         
         # Compute dust temperature
         if mctherm:
@@ -725,7 +740,9 @@ class radmc3dModel:
         if 'rto_style' in self.modpar.ppar.keys():
             if self.modpar.ppar['rto_style'] > 1:
                 binary = True
+        blockPrint()
         self.data.readDustTemp(binary=binary)
+        enablePrint()
         
         os.chdir(current_dir)
         
@@ -1132,3 +1149,19 @@ def getParams(paramfile=None):
 
     # Return
     return modpar
+
+def blockPrint():
+    '''
+    Directs print function output to dev0, preventing messages from appearing 
+    on standard output.
+    The purpose of the function is to suppress radmc3dPy output when it is not 
+    necessary.
+    '''
+    sys.stdout = open(os.devnull, 'w')
+
+def enablePrint():
+    '''
+    Directs print function output to standard output. Call function always after 
+    calling blockPrint() when you want to restore print function output.
+    '''
+    sys.stdout = sys.__stdout__

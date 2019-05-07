@@ -34,9 +34,10 @@ class radmc3dRunner:
     cpu_us = 0
     pid = 0
     ID = None
+    verbose = None
     
     def __init__(self, model_dir='.', bufsize=500000, nthreads=1, 
-                 radmc3dexec=None, ID=None):
+                 radmc3dexec=None, ID=None, verbose=False):
         '''
         Initializes RADMC3D child process and subprocess handlers.
         '''
@@ -44,6 +45,7 @@ class radmc3dRunner:
             self.ID = np.random.randint(0,99999)
         else:
             self.ID = ID
+        self.verbose = verbose
         
         if radmc3dexec:
             self.radmc3dexec = radmc3dexec
@@ -67,10 +69,13 @@ class radmc3dRunner:
         
         return None
 
-    def terminate(self, verbose=False):
+    def terminate(self, verbose=None):
         '''
         Terminate child process and close pipes.
         '''
+        # If verbosity not set then use global class variable
+        if verbose is None:
+            verbose = self.verbose
 
         self.proc.stdin.write(b"exit\n")
         self.proc.stdin.flush()
@@ -91,7 +96,7 @@ class radmc3dRunner:
     
     def runMCtherm(self, noscat=None, nphot_therm=None, 
                     nphot_scat=None, nphot_mcmono=None, 
-                    verbose=False):
+                    verbose=None):
         '''
         Send instruction to RADCM3D child process to compute dust temperature.
         
@@ -121,6 +126,10 @@ class radmc3dRunner:
                 Set number of photon packages in monochromatic MC simulation. 
                 If None, then option from radmc3d.inp is used.
         '''
+        # If verbosity not set then use global class variable
+        if verbose is None:
+            verbose = self.verbose
+
         current_dir = os.path.realpath('.')
         if verbose:
             print('INFO [{:06}]: process PID {} started at: \n     {}'.format(self.ID, self.pid,current_dir))

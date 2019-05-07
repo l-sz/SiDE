@@ -173,6 +173,34 @@ Make sure that the call to `run_mcmc()` has use_mpi=True and that in the elias29
 script the partition, ntasks-per-node, nodes parameters are set correctly and 
 that the srun -n argument reflects the choice of the above parameters.
 
+The result chain is written to `examples/elias29/elias29_mcmc_save.p` python 
+pickle format fime. A plotting routine (`plot_corner`) is provided to visualise 
+the results in a corner plot.
+
+### Resuming MCMC computation
+
+The example script saves the parameter and posterior probability after each 
+step to `examples/elias29/chain_0.dat` file. This file can be used to restart unfinished or 
+interupted computations. 
+*Important*: the same number of walkers must be used in subsequent runs.
+
+To resume a previous run, edit the `fit_elias29.py` script and update the call to 
+`run_mcmc()` in the last lines:
+
+```python
+# Resume example
+current_dir = os.path.realpath('.')
+run_mcmc(current_dir+'/elias29', nwalkers=40, nsteps=1000, nburnin=0, use_mpi=True, 
+         resume=True, restart_file=current_dir+'/elias29/chain.dat')
+```
+
+With these parameters `SimpleDiskEnvFit` will read in the chain file and start 
+the new MCMC run from the last saved state of the `emcee` sampler. The chain 
+will continue with 1000 steps (i.e. 1000 times 40 models) and write the results 
+from the current run to `examples/elias29/chain_0.dat`. The results in the 
+`elias29_mcmc_save.p` pickle file will contain the chain from both the 
+first and the rerun.
+
 **General notes**
 
 The minimally required files for the fitting are the parameter file (\*param.inp) 

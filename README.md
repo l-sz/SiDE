@@ -25,8 +25,7 @@ Features and options:
 Requirements:
 ------------
 
-- [RADMC-3D](http://www.ita.uni-heidelberg.de/~dullemond/software/radmc-3d/)
-- python (2.7 or 3.6+)
+- python (2.7 or 3.5+)
 - matplotlib
 - numpy
 - [radmc3dPy](https://www.ast.cam.ac.uk/~juhasz/radmc3dPyDoc)

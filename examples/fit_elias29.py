@@ -12,8 +12,8 @@ import corner
 from galario import arcsec, deg
 
 def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
-             plot=False, use_mpi=False, resume=False, chain_file='chain.dat',
-             restart_file='chain.dat'):
+             plot=False, use_mpi=False, verbose=False, resume=False, 
+             chain_file='chain.dat', restart_file='chain.dat'):
     '''
     Computes posteriori probabilities of parametrised Class 0/I models given 
     a set of observational constraints using SimpleDiskEnvFit.
@@ -105,7 +105,7 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
              {'npix':512,'wav':3000.,'sizeau':11000,'incl':67.}]
 
     # Set parameters for bayes.lnpostfn() function
-    kwargs = {'dpc': 125., 'incl': 67., 'impar': impar, 'verbose': True, 
+    kwargs = {'dpc': 125., 'incl': 67., 'impar': impar, 'verbose': verbose, 
               'PA':0.0, 'dRA':0.48*arcsec, 'dDec':0.98*arcsec,
               'cleanModel': True }
 
@@ -176,16 +176,20 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
                           kwargs=kwargs, threads=nthreads, pool=pool)
 
     print ("INFO [{:06}]: RUN {} main steps".format(0,nsteps))
+    print ("INFO [{:06}]: print status info at every 100 steps")
 
     f = open(chain_file, "a")
 
-    for step in sampler.sample(pos, iterations=nsteps, lnprob0=lnprob0):
+    for i, step in enumerate(sampler.sample(pos, iterations=nsteps, 
+                                            lnprob0=lnprob0)):
         position = step[0]
         lnprob = step[1]
-        print (step[2])
         for k in range(nwalkers):
             posstr = ''.join(np.vectorize("%12.5E ".__mod__)(position[k]))
             f.write("{:04d} {:s}{:12.5E}\n".format(k, posstr, lnprob[k]))
+        # Print progress info
+        if (i+1) % 100 == 0:
+            print("INFO [{:06}]: {:5.1%} done".format(0,float(i) / nsteps))
 
     f.close()
 

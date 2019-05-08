@@ -47,12 +47,15 @@ def delta_neg(r, q):
 def delta_pos(r, delta):
 
     dr = (r + np.sqrt(delta)).real
-    s = dr ** (1. / 3.)
+    s = np.empty_like(dr)
+    t = np.empty_like(dr)
+
+    pos = dr >= 0.
+    s[pos] = dr[pos] ** (1. / 3.)
     neg = dr < 0.
     s[neg] = - (- dr[neg]) ** (1. / 3.)
-
     dr = (r - np.sqrt(delta)).real
-    t = np.empty_like(dr)
+
     pos = dr >= 0.
     t[pos] = dr[pos] ** (1. / 3.)
     neg = dr < 0.

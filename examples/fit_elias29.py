@@ -189,7 +189,7 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
             f.write("{:04d} {:s}{:12.5E}\n".format(k, posstr, lnprob[k]))
         # Print progress info
         if (i+1) % 100 == 0:
-            print("INFO [{:06}]: {:5.1%} done".format(0,float(i) / nsteps))
+            print("INFO [{:06}]: {:5.1%} done".format(0,float(i+1) / nsteps))
 
     f.close()
 
@@ -199,17 +199,20 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
     if use_mpi:
         pool.close()
 
+    # Extract results
     chain = sampler.chain[:, :, :]
-    
+    accept_frac = sampler.acceptance_fraction
+    lnprob = sampler.lnprobability
+
     if resume:
         chain = np.concatenate( (resume_data['chain'], chain), axis=1 )
         nsteps = nsteps + resume_data['nsteps']
 
     # Save results
-    results = {'chain': chain, 'parname':parname, 'p_ranges':p_ranges, 'p0':p0,
-               'ndim':ndim, 'nwalkers':nwalkers, 'nthreads':nthreads, 
-               'nsteps':nsteps, 'nburnin':nburnin, 'visdata':visdata, 
-               'impar':impar}
+    results = {'chain': chain, 'accept_frac':accept_frac, 'lnprob':lnprob, 
+               'parname':parname, 'p_ranges':p_ranges, 'p0':p0, 'ndim':ndim, 
+               'nwalkers':nwalkers, 'nthreads':nthreads, 'nsteps':nsteps, 
+               'nburnin':nburnin, 'visdata':visdata, 'impar':impar}
 
     # Save chain and metadata
     # Note that protocol=2 needed for python 2/3 compatibility
@@ -329,7 +332,8 @@ def read_chain_file(chain_file='chain.dat'):
 
 if __name__ == "__main__":
     current_dir = os.path.realpath('.')
-    run_mcmc(current_dir+'/elias29', use_mpi=True)
+    run_mcmc(current_dir+'/elias29', use_mpi=True, verbose=True)
     # Resume example
     #run_mcmc(current_dir+'/elias29', nsteps=300, nburnin=0, use_mpi=True, 
-    #         resume=True, restart_file=current_dir+'/elias29/chain_0.dat')
+    #         resume=True, restart_file=current_dir+'/elias29/chain_0.dat',
+    #         verbose=True)

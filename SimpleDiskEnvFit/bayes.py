@@ -49,7 +49,7 @@ def lnpriorfn(p, par_ranges):
 
 def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
              dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0,
-             impar=None, verbose=False, cleanModel=False):
+             impar=None, verbose=False, cleanModel=False, binary=False):
     """
     Log of posterior probability function.
     
@@ -94,6 +94,15 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
             If True, then print summary of model parameters to standard 
             output. Runtime INFO messages are also printed to standard 
             output. Default is False.
+    cleanModel : bool, optional
+            If True, then delete the RADMC-3D model folder from disk after the 
+            posterior probability estimation. In this case model files are not 
+            stored.
+    binary  : bool, optional
+            If True, then RADMC3D will use binary I/O, if False then use 
+            ASCII I/O. Binary I/O may improve computation speed and reduce 
+            disk space usage when models are kept (i.e. cleanModel is not 
+            called).
     """
     # Model ID
     rand = np.random.randint(0,99999)
@@ -191,8 +200,8 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
 
     # compute the model brightness profile    
     mod = main.radmc3dModel(modpar=modpar, model_dir=model_dir, 
-                            resource_dir=resource_dir, 
-                            ID = rand)
+                            resource_dir=resource_dir, ID=rand,
+                            binary=binary)
     mod.write2folder()
 
     mod.runModel(impar=impar, mctherm=True, nphot_therm=100000, verbose=verbose)

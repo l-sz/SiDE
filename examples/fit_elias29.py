@@ -107,7 +107,7 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
     # Set parameters for bayes.lnpostfn() function
     kwargs = {'dpc': 125., 'incl': 67., 'impar': impar, 'verbose': verbose, 
               'PA':0.0, 'dRA':0.48*arcsec, 'dDec':0.98*arcsec,
-              'cleanModel': True }
+              'cleanModel': True, 'binary': True }
 
     # If projection parameters are not known
     #parname = ['mdisk','rho0Env','gsmax_disk','gsmax_env','PA',
@@ -176,7 +176,7 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
                           kwargs=kwargs, threads=nthreads, pool=pool)
 
     print ("INFO [{:06}]: RUN {} main steps".format(0,nsteps))
-    print ("INFO [{:06}]: print status info at every 100 steps")
+    print ("INFO [{:06}]: status info at every 100 steps:".format(0))
 
     f = open(chain_file, "a")
 

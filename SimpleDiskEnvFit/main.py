@@ -57,6 +57,7 @@ class radmc3dModel:
     radsource = None
     opac = None
     opac_files = None
+    use_binary = None
     
     # Model specific data
     model_dir = None
@@ -85,7 +86,7 @@ class radmc3dModel:
     
     def __init__(self, modpar=None, model_dir=None, resource_dir=None, 
                  idisk=True, ienv=True, icav=False, iext=False,
-                 write2folder=False, ID=None, verbose=False):
+                 write2folder=False, ID=None, verbose=False, binary=False):
         '''
         Self contained RADMC-3D model class. 
         
@@ -138,6 +139,11 @@ class radmc3dModel:
                 If True, then print summary of model parameters to standard 
                 output. Runtime INFO messages are also printed to standard 
                 output. Default is False.
+        binary  : bool, optional
+                If True, then RADMC3D will use binary I/O, if False then use 
+                ASCII I/O. Binary I/O may improve computation speed and reduce 
+                disk space usage when models are kept (i.e. cleanModel is not 
+                called).
         '''
         # Set model ID
         if ID is None:
@@ -147,6 +153,9 @@ class radmc3dModel:
             
         # Set verbosity
         self.verbose = verbose
+        
+        # Use binary RADMC3D I/O?
+        self.binary = binary
         
         # Create empty model
         self.grid = radmc3dPy.analyze.radmc3dGrid()
@@ -190,6 +199,11 @@ class radmc3dModel:
             
         self.modpar.setPar(['iext',str(iext),'Include external radiation?',
                             'Radiation sources'])
+        # Update output format parameter
+        if self.binary is True:
+            self.modpar.setPar(['rto_style', '3'])
+        else:
+            self.modpar.setPar(['rto_style', '1'])
 
         # Set model grid
         self._setGrid()
@@ -454,7 +468,7 @@ class radmc3dModel:
         self.radsource.writeStarsinp(old=False)
 
         # Dust density distribution
-        self.data.writeDustDens(binary=False, old=False)
+        self.data.writeDustDens(binary=self.binary, old=False)
 
         # radmc3d.inp
         radmc3dPy.setup.writeRadmc3dInp(modpar=self.modpar)
@@ -736,12 +750,9 @@ class radmc3dModel:
         self.rrun.terminate(verbose=verbose)
         
         # Read dust temperature
-        binary = False
-        if 'rto_style' in self.modpar.ppar.keys():
-            if self.modpar.ppar['rto_style'] > 1:
-                binary = True
         blockPrint()
-        self.data.readDustTemp(binary=binary)
+        # TODO: this is not necessary in current code use
+        self.data.readDustTemp(binary=self.binary)
         enablePrint()
         
         os.chdir(current_dir)
@@ -1099,6 +1110,8 @@ def getParams(paramfile=None):
                        ' Take the dust temperature to identical to the gas temperature', 'Code parameters'])
         modpar.setPar(['modified_random_walk', '1', 
                        ' Switched on (1) and off (0) modified random walk', 'Code parameters'])
+        modpar.setPar(['rto_style', '1', 
+                       ' Space-dependent output format (1) ASCII, F77 unformatted (2) and off (3) binary', 'Code parameters'])
         
         # Envelope parameters
         modpar.setPar(['ienv','True',' Include envelope in model?',

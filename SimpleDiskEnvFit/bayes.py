@@ -123,8 +123,8 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
             val = 10.0**p[i] * nc.ms
         elif parname[i] == 'rho0Env':
             val = 10**p[i]
-        elif parname[i] == 'rdisk':
-            val = p[i] * nc.au
+        elif parname[i] in ['rdisk','r0Env','rTrunEnv']:
+            val = 10**p[i] * nc.au
         elif parname[i][0:3] == 'gsm': # gsmin or gsmax
             val = 10.0**p[i]
         else:

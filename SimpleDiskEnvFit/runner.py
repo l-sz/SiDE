@@ -125,6 +125,8 @@ class radmc3dRunner:
         nphot_mcmono : int, optional
                 Set number of photon packages in monochromatic MC simulation. 
                 If None, then option from radmc3d.inp is used.
+        verbose : bool, optional
+                Print INFO messages to standard output. Default is False.
         '''
         # If verbosity not set then use global class variable
         if verbose is None:
@@ -214,9 +216,17 @@ class radmc3dRunner:
             self.proc.stdin.write(str.encode("{}\n".format(str(lambdarange[1]))))
             self.proc.stdin.write(b"nlam\n")
             self.proc.stdin.write(str.encode("{}\n".format(str(int(nlam)))))
-        elif wav:
+        elif type(wav) not in [list, np.ndarray]:
             self.proc.stdin.write(b"lambda\n")
             self.proc.stdin.write(str.encode("{}\n".format(str(wav))))
+        elif type(wav) in [list, np.ndarray]:
+            nwav = len(wav)
+            f = open('camera_wavelength_micron.inp','w')
+            f.write("{:6}\n".format(nwav))
+            for i in range(nwav):
+                f.write("{:12.9E}\n".format(wav[i]))
+            f.close()
+            self.proc.stdin.write(b"loadlambda\n")
         else:
             print("ERROR [{:06}]: no wavelength parameter \
                   set in run_image()!".format(self.ID))
@@ -251,9 +261,7 @@ class radmc3dRunner:
         
         self.proc.stdin.write(b"writeimage\n")
         self.proc.stdin.flush()
-        
-        # should wait until it runs
-        
+
         return 0
         
     def readImage(self):
@@ -335,7 +343,7 @@ class radmc3dRunner:
         return img
         
         
-    def getImage(self, **args):
+    def getImage(self, verbose=None, **args):
         '''
         Compute, read and return RADMC3D image.
         
@@ -347,13 +355,23 @@ class radmc3dRunner:
         
         Parameters
         ----------
+        verbose : bool, optional
+                Print INFO messages to standard output. Default is False.
         **arg : dict
                 arguments passed to runImage() class method.
         '''
+        # If verbosity not set then use global class variable
+        if verbose is None:
+            verbose = self.verbose
+        
         # Compute image
         self.runImage(**args)
         
         # Read image
         img = self.readImage()
         
+        if verbose:
+            print ('INFO [{:06}]: Image at {} micron computed!'.format(self.ID,
+                                                                  args['wav']))
+
         return img

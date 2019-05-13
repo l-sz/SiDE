@@ -49,7 +49,8 @@ def lnpriorfn(p, par_ranges):
 
 def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
              dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0,
-             impar=None, verbose=False, cleanModel=False, binary=False):
+             impar=None, verbose=False, cleanModel=False, binary=False,
+             chi2_only=True, galario_check=False):
     """
     Log of posterior probability function.
     
@@ -103,6 +104,15 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
             ASCII I/O. Binary I/O may improve computation speed and reduce 
             disk space usage when models are kept (i.e. cleanModel is not 
             called).
+    chi2_only : bool
+            If True then the synthetic visibility itself is not computed and 
+            stored (a zero value array is stored instead). The chi2 is still 
+            computed and stored. Set this to True when running MCMC fitting 
+            in order to improve speed. Default is True.
+    galario_check : bool
+            Check whether image and dxy satisfy Nyquist criterion for 
+            computing the synthetic visibilities in the (u, v) locations 
+            provided (see galario documentation). Default is False.
     """
     # Model ID
     rand = np.random.randint(0,99999)
@@ -165,12 +175,12 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
         else:
             raise ValueError('ERROR [lnpostfn]: unknown \
                 parameter [{}]'.format(parname[i]))
-        
+
         if verbose:
             print ("INFO [{:06}]: {:s} is set to {}".format(rand,
                                                             parname[i],
                                                             val))
-    
+
     # Generate model folder name
     model_dir = "{}/mod_".format('.')
     for i in range(len(parname)):
@@ -211,7 +221,8 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
         dpc_vis = impar[0]['dpc']
     else:
         dpc_vis = impar['dpc']
-    mod.getVis(uvdata, dpc=dpc_vis, PA=PA, dRA=dRA, dDec=dDec)
+    mod.getVis(uvdata, dpc=dpc_vis, PA=PA, dRA=dRA, dDec=dDec, chi2_only=
+               chi2_only, galario_check=galario_check)
 
     # Delete model folder from disk if requested
     if cleanModel:

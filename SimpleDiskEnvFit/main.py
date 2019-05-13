@@ -18,6 +18,7 @@ from __future__ import print_function
 import os
 import sys
 import time
+import copy
 import numpy as np
 from shutil import copyfile, rmtree
 
@@ -226,7 +227,7 @@ class radmc3dModel:
         
         # Write out model parameters
         if verbose:
-            infoModelParams(modpar=self.modpar)
+            self.infoModelParams()
         
         # Done
 
@@ -739,8 +740,19 @@ class radmc3dModel:
             self.image = []
             
             for ip in impar:
-                img = self.rrun.getImage(**ip)
-                self.image.append(img)
+                img = self.rrun.getImage(verbose=verbose, **ip)
+                if img.nwav == 1:
+                    self.image.append(img)
+                else:
+                    # If multi wavelength image, then unpack
+                    for jp in range(img.nwav):
+                        tmp = copy.deepcopy(img)
+                        tmp.nwav = 1
+                        tmp.nfreq = 1
+                        tmp.wav = np.array([img.wav[jp]])
+                        tmp.image = img.image[:,:,jp].reshape((img.nx,img.ny,1))
+                        tmp.imageJyppix = img.imageJyppix[:,:,jp].reshape((img.nx,img.ny,1))
+                        self.image.append(tmp)
 
         # Compute SED(s) if needed
         #
@@ -759,7 +771,8 @@ class radmc3dModel:
         
         return 0
         
-    def getVis(self, uvdata, dpc=1.0, PA=0., dRA=0.0, dDec=0.0, useCUDA=False):
+    def getVis(self, uvdata, dpc=1.0, PA=0., dRA=0.0, dDec=0.0, chi2_only=False, 
+               galario_check=False, verbose=None):
         '''
         Compute visibility of previously computed images and their chi2 
         compared to observations, using the Galario library.
@@ -777,7 +790,21 @@ class radmc3dModel:
                 Offset in RA in radian. Default is 0.0.
         dDec :  float, optional
                 Offset in Dec in radian. Default is 0.0.
+        chi2_only : bool
+                If True then the synthetic visibility itself is not computed and 
+                stored (a zero value array is stored instead). The chi2 is still
+                computed and stored. Set this to True when running MCMC fitting 
+                in order to improve speed. Default is False.
+        galario_check : bool
+                Check whether image and dxy satisfy Nyquist criterion for 
+                computing the synthetic visibilities in the (u, v) locations 
+                provided (see galario documentation). Default is False.
+        verbose : bool, optional
+                Print INFO messages to standard output. Default is False.
         '''
+        # If verbosity not set then use global class variable
+        if verbose is None:
+            verbose = self.verbose
 
         if self.image is None:
 
@@ -827,19 +854,25 @@ class radmc3dModel:
 
                 dxy = self.image[iim].sizepix_x / nc.au / dpc / 3600. * galario.deg
 
-                vis = galario.double.sampleImage( imJyppix, dxy, u/wle, v/wle, 
-                                                  check=True )
+                # Compute visibility
+                if chi2_only:
+                    vis = np.zeros_like(u, dtype=np.complex)
+                else:
+                    vis = galario.double.sampleImage( imJyppix, dxy, u/wle, v/wle, 
+                                                      check=galario_check )
 
+                # Store visibility (or 0 array)
                 self.vis_mod.append( uvplot.UVTable(uvtable=[u, v, vis.real,
-                                        vis.imag, w], wle=wle,
-                                        columns=uvplot.COLUMNS_V0) )
+                                     vis.imag, w], wle=wle,
+                                     columns=uvplot.COLUMNS_V0) )
                 self.vis_inp.append( uvplot.UVTable(uvtable=[u, v, Re,
-                                        Im, w], wle=wle,
-                                        columns=uvplot.COLUMNS_V0) )
+                                     Im, w], wle=wle,
+                                     columns=uvplot.COLUMNS_V0) )
 
+                # Compute chi2
                 chi2 = galario.double.chi2Image( imJyppix, dxy, u/wle, v/wle, 
                                                  Re, Im, w, dRA=dRA, dDec=dDec, 
-                                                 PA=PA )
+                                                 PA=PA, check=galario_check )
                 self.chi2.append(chi2)
 
         return 0

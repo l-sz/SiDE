@@ -21,6 +21,7 @@ import time
 import copy
 import numpy as np
 from shutil import copyfile, rmtree
+from timeit import default_timer as timer
 
 import radmc3dPy
 import radmc3dPy.natconst as nc
@@ -668,7 +669,7 @@ class radmc3dModel:
         
     def runModel(self, bufsize=500000, nthreads=1, radmc3dexec=None,
                  mctherm=True, noscat=None, nphot_therm=None, nphot_scat=None,
-                 nphot_mcmono=None, impar=None, verbose=None):
+                 nphot_mcmono=None, impar=None, verbose=None, time=False):
         '''
         Run Monte Carlo dust radiation transport to determine dust temperature 
         and / or compute image according impar dictionary.
@@ -709,7 +710,11 @@ class radmc3dModel:
                 method description. At least the wavelength (wav keyword) must 
                 be set for each images. Default is None.
         verbose : bool, optional
-                Print INFO messages to standard output. Default is False.
+                Print INFO messages to standard output. If set to None, then 
+                use verbose class variable. Default is None.
+        time :  bool, optional
+                Prints function runtime information. Useful for profiling.
+                Default is False.
         '''
         # If verbosity not set then use global class variable
         if verbose is None:
@@ -729,7 +734,7 @@ class radmc3dModel:
                                  nphot_therm=nphot_therm,
                                  nphot_scat=nphot_scat, 
                                  nphot_mcmono=nphot_mcmono,
-                                 verbose=verbose)
+                                 verbose=verbose, time=time)
         
         # Compute image(s)
         if impar is not None:
@@ -740,7 +745,7 @@ class radmc3dModel:
             self.image = []
             
             for ip in impar:
-                img = self.rrun.getImage(verbose=verbose, **ip)
+                img = self.rrun.getImage(verbose=verbose, time=time, **ip)
                 if img.nwav == 1:
                     self.image.append(img)
                 else:
@@ -772,7 +777,7 @@ class radmc3dModel:
         return 0
         
     def getVis(self, uvdata, dpc=1.0, PA=0., dRA=0.0, dDec=0.0, chi2_only=False, 
-               galario_check=False, verbose=None):
+               galario_check=False, verbose=None, time=False):
         '''
         Compute visibility of previously computed images and their chi2 
         compared to observations, using the Galario library.
@@ -801,10 +806,16 @@ class radmc3dModel:
                 provided (see galario documentation). Default is False.
         verbose : bool, optional
                 Print INFO messages to standard output. Default is False.
+        time :  bool, optional
+                Prints function runtime information. Useful for profiling.
+                Default is False.
         '''
         # If verbosity not set then use global class variable
         if verbose is None:
             verbose = self.verbose
+
+        if time:
+            start = timer()
 
         if self.image is None:
 
@@ -874,6 +885,17 @@ class radmc3dModel:
                                                  Re, Im, w, dRA=dRA, dDec=dDec, 
                                                  PA=PA, check=galario_check )
                 self.chi2.append(chi2)
+
+        if time:
+            end = timer()
+            dt = end-start
+
+        if verbose and time:
+            print ('INFO [{:06}]: Visibility and/or chi^2 computed in {:.2f} s!'.format(
+                            self.ID, dt))
+        elif verbose:
+            print ('INFO [{:06}]: Visibility and/or chi^2 computed!'.format(
+                self.ID))
 
         return 0
 

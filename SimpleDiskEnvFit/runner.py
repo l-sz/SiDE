@@ -19,6 +19,7 @@ import subprocess
 import numpy as np
 import radmc3dPy
 import os
+from timeit import default_timer as timer
 
 __all__ = ['radmc3dRunner']
 
@@ -96,7 +97,7 @@ class radmc3dRunner:
     
     def runMCtherm(self, noscat=None, nphot_therm=None, 
                     nphot_scat=None, nphot_mcmono=None, 
-                    verbose=None):
+                    verbose=None, time=False):
         '''
         Send instruction to RADCM3D child process to compute dust temperature.
         
@@ -127,17 +128,23 @@ class radmc3dRunner:
                 If None, then option from radmc3d.inp is used.
         verbose : bool, optional
                 Print INFO messages to standard output. Default is False.
+        time :  bool, optional
+                Prints function runtime information. Useful for profiling.
+                Default is False.
         '''
         # If verbosity not set then use global class variable
         if verbose is None:
             verbose = self.verbose
 
+        if time:
+            start = timer()
+
         current_dir = os.path.realpath('.')
         if verbose:
             print('INFO [{:06}]: process PID {} started at: \n     {}'.format(self.ID, self.pid,current_dir))
-        
+
         self.proc.stdin.write(b"mctherm\n")
-        
+
         if noscat:
             self.proc.stdin.write(b"noscat\n")
         if nphot_therm:
@@ -149,19 +156,26 @@ class radmc3dRunner:
         if nphot_mcmono:
             self.proc.stdin.write(b"nphot_mcmono\n")
             self.proc.stdin.write(str.encode("{}\n".format(str(int(nphot_mcmono)))))
-                                  
+
         self.proc.stdin.write(b"respondwhenready\n")
-                                  
+
         self.proc.stdin.write(b"enter\n")
         self.proc.stdin.flush()
-        
+
         # should wait until it runs
         stat = self.proc.stdout.readline()
-        if verbose:
+
+        if time:
+            end = timer()
+            dt = end-start
+
+        if verbose and time:
+            print ('INFO [{:06}]: Thermal MC run done in {:.2f} s!'.format(self.ID, dt))
+        elif verbose:
             print ('INFO [{:06}]: Thermal MC run done!'.format(self.ID))
-        
+
         return 0
-        
+
     def runImage(self, npix=None, incl=None, wav=None, sizeau=None, phi=None,      
                 posang=None, pointau=None, fluxcons=True, nostar=False,
                 noscat=False, lambdarange=None, nlam=None, stokes=False, **arg):
@@ -343,7 +357,7 @@ class radmc3dRunner:
         return img
         
         
-    def getImage(self, verbose=None, **args):
+    def getImage(self, verbose=None, time=False, **args):
         '''
         Compute, read and return RADMC3D image.
         
@@ -357,6 +371,9 @@ class radmc3dRunner:
         ----------
         verbose : bool, optional
                 Print INFO messages to standard output. Default is False.
+        time :  bool, optional
+                Prints function runtime information. Useful for profiling.
+                Default is False.
         **arg : dict
                 arguments passed to runImage() class method.
         '''
@@ -364,13 +381,23 @@ class radmc3dRunner:
         if verbose is None:
             verbose = self.verbose
         
+        if time:
+            start = timer()
+        
         # Compute image
         self.runImage(**args)
         
         # Read image
         img = self.readImage()
-        
-        if verbose:
+
+        if time:
+            end = timer()
+            dt = end-start
+
+        if verbose and time:
+            print ('INFO [{:06}]: Image at {} micron computed in {:.2f} s!'.format(
+                            self.ID, args['wav'], dt))
+        elif verbose:
             print ('INFO [{:06}]: Image at {} micron computed!'.format(self.ID,
                                                                   args['wav']))
 

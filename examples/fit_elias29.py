@@ -108,7 +108,7 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
     kwargs = {'dpc': 125., 'incl': 67., 'impar': impar, 'verbose': verbose, 
               'PA':0.0, 'dRA':0.48*arcsec, 'dDec':0.98*arcsec,
               'cleanModel': True, 'binary': True, 'chi2_only':True, 
-              'galario_check':False }
+              'galario_check':False, 'time':False }
 
     # If projection parameters are not known
     #parname = ['mdisk','rho0Env','gsmax_disk','gsmax_env','PA',

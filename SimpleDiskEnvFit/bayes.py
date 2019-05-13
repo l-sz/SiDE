@@ -50,7 +50,7 @@ def lnpriorfn(p, par_ranges):
 def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
              dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0,
              impar=None, verbose=False, cleanModel=False, binary=False,
-             chi2_only=True, galario_check=False):
+             chi2_only=True, galario_check=False, time=False):
     """
     Log of posterior probability function.
     
@@ -113,6 +113,9 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
             Check whether image and dxy satisfy Nyquist criterion for 
             computing the synthetic visibilities in the (u, v) locations 
             provided (see galario documentation). Default is False.
+    time :  bool, optional
+            Prints function runtime information. Useful for profiling.
+            Default is False.
     """
     # Model ID
     rand = np.random.randint(0,99999)
@@ -214,7 +217,8 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
                             binary=binary)
     mod.write2folder()
 
-    mod.runModel(impar=impar, mctherm=True, nphot_therm=100000, verbose=verbose)
+    mod.runModel(impar=impar, mctherm=True, nphot_therm=100000, verbose=verbose,
+                 time=time)
 
     # Use the correct distance
     if type(impar) == list:
@@ -222,7 +226,8 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     else:
         dpc_vis = impar['dpc']
     mod.getVis(uvdata, dpc=dpc_vis, PA=PA, dRA=dRA, dDec=dDec, chi2_only=
-               chi2_only, galario_check=galario_check)
+               chi2_only, galario_check=galario_check, time=time, 
+               verbose=verbose)
 
     # Delete model folder from disk if requested
     if cleanModel:

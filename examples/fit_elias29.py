@@ -107,7 +107,8 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
     # Set parameters for bayes.lnpostfn() function
     kwargs = {'dpc': 125., 'incl': 67., 'impar': impar, 'verbose': verbose, 
               'PA':0.0, 'dRA':0.48*arcsec, 'dDec':0.98*arcsec,
-              'cleanModel': True, 'binary': True }
+              'cleanModel': True, 'binary': True, 'chi2_only':True, 
+              'galario_check':False }
 
     # If projection parameters are not known
     #parname = ['mdisk','rho0Env','gsmax_disk','gsmax_env','PA',
@@ -187,6 +188,7 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
         for k in range(nwalkers):
             posstr = ''.join(np.vectorize("%12.5E ".__mod__)(position[k]))
             f.write("{:04d} {:s}{:12.5E}\n".format(k, posstr, lnprob[k]))
+        f.flush()
         # Print progress info
         if (i+1) % 100 == 0:
             print("INFO [{:06}]: {:5.1%} done".format(0,float(i+1) / nsteps))

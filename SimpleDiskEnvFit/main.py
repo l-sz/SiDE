@@ -79,6 +79,7 @@ class radmc3dModel:
     vis_mod = None
     vis_inp = None
     chi2 = None
+    nvis = None           # number of visibility points, used for normalisation
    
     # Fitting parameters
     prediction = None
@@ -857,7 +858,9 @@ class radmc3dModel:
                 if self.vis_inp is None:
                     self.vis_inp = []
                 if self.chi2 is None:
-                    self.chi2 = []
+                    self.chi2 = np.empty(0)
+                if self.nvis is None:
+                    self.nvis = np.empty(0)
 
                 wle = wav * 1.0e-6
 
@@ -884,7 +887,11 @@ class radmc3dModel:
                 chi2 = galario.double.chi2Image( imJyppix, dxy, u/wle, v/wle, 
                                                  Re, Im, w, dRA=dRA, dDec=dDec, 
                                                  PA=PA, check=galario_check )
-                self.chi2.append(chi2)
+                # Determine number of non-zero (u,v) pairs
+                nvis = np.where(np.hypot(u/wle,v/wle) > 0.0).size
+
+                self.chi2 = np.append(self.chi2, chi2)
+                self.nvis = np.append(self.nvis, nvis)
 
         if time:
             end = timer()

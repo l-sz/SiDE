@@ -233,7 +233,7 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     if cleanModel:
         mod.cleanModel()
 
-    chi2 = -0.5 * np.sum(mod.chi2) + lnprior
+    chi2 = -0.5 * np.sum(mod.chi2/mod.nvis) + lnprior
     
     if verbose:
         print ("INFO [{:06}]: model ch^2 = {:10.6E}".format(rand, chi2))

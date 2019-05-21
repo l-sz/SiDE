@@ -49,7 +49,8 @@ def lnpriorfn(p, par_ranges):
 
 def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
              dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0,
-             impar=None, verbose=False, cleanModel=False, binary=False,
+             idisk=True, ienv=True, icav=False, impar=None, 
+             verbose=False, cleanModel=False, binary=False,
              chi2_only=True, galario_check=False, time=False):
     """
     Log of posterior probability function.
@@ -87,6 +88,12 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
             Offset in RA in radian. Default is 0.0.
     dDec :  float, optional
             Offset in Dec in radian. Default is 0.0.
+    idisk : bool
+            Include disk component in model. Default is True.
+    ienv  : bool
+            Include envelope component in model. Default is True.
+    icav  : bool
+            Include envelope cavity in model. Default is False.
     impar : dict or list of dict, optional
             Image parameter(s). Known keywords are listed in the runImage()
             method description. At least the wavelength (wav keyword) must 
@@ -143,6 +150,10 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
         else:
             val = p[i]
         
+        # If rTrunEnv is not a fit parameter then set it equal to rdisk.
+        if parname[i] == 'rdisk':
+            modpar.setPar("rTrunEnv", "{}".format(val))
+
         # Set the model parameters
         if parname[i] in modpar.ppar.keys():
             if type(val) is list:
@@ -214,7 +225,8 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     # compute the model brightness profile    
     mod = main.radmc3dModel(modpar=modpar, model_dir=model_dir, 
                             resource_dir=resource_dir, ID=rand,
-                            binary=binary)
+                            binary=binary, idisk=idisk, ienv=ienv, 
+                            icav=icav)
     mod.write2folder()
 
     mod.runModel(impar=impar, mctherm=True, nphot_therm=100000, verbose=verbose,

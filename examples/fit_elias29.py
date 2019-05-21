@@ -107,6 +107,7 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
     # Set parameters for bayes.lnpostfn() function
     kwargs = {'dpc': 125., 'incl': 67., 'impar': impar, 'verbose': verbose, 
               'PA':0.0, 'dRA':0.48*arcsec, 'dDec':0.98*arcsec,
+              'idisk':True, 'ienv':True, 'icav':False,
               'cleanModel': True, 'binary': True, 'chi2_only':True, 
               'galario_check':False, 'time':False }
 

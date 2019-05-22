@@ -142,7 +142,7 @@ def powerlaw_envelope(grid, ppar, cavity=False):
     
     return (rho_env, mass, mass3000)
 
-def envelope_cavity(rho, grid, ppar):
+def envelope_cavity(rho, grid, ppar, modeCav=None):
     '''
     Returns density distribution with reduced values in a cone or cylinder.
     The opening angle and reduction factors are specified in ppar.
@@ -156,17 +156,39 @@ def envelope_cavity(rho, grid, ppar):
     ppar : dict
            Dictionary provided by modPar.ppar (radmc3dPar object)
     '''
+    rr, th = np.meshgrid(grid.x, grid.y, indexing='ij')
+    z0 = np.zeros([grid.nx, grid.nz, grid.nz], dtype=np.float64)
+    zz   = rr * np.cos(th)
+    rcyl = rr * np.sin(th)
+    
+    # Recenter the grid; used for modeCav = 'gridcenter'
+    zz_n = 0.0
+    rcyl_n = ppar['rTrunEnv']
+    rr_n = np.sqrt( (rcyl-rcyl_n)**2 + (zz-zz_n)**2 )
+    th_n = np.arctan( (rcyl-rcyl_n) / (zz-zz_n) )
     
     dummy = rho[:,:,0,0]
+    
+    # Decide which cavity shape
+    if modeCav is not None:
+        ppar.setPar(['modeCav',str(modeCav)])
+    
+    # Find cavity opening angle in parameter list
+    if 'thetac_deg' in ppar.keys():
+        theta_cav_deg = ppar['thetac_deg']
+    elif 'tetDegCav' in ppar.keys():
+        theta_cav_deg = ppar['tetDegCav']
+    else:
+        raise ValueError('ERROR [envelope_cavity]: Cavity opening angle not given')
     
     if (ppar['modeCav'] == 'Sheehan2017'):
         crit = ( zz > (1.0*au + rcyl**(1.0)) )
     elif (ppar['modeCav'] == 'edgecenter'):
-        crit = ( th_n < np.deg2rad(ppar['thetDegCav']) )
+        crit = ( th_n < np.deg2rad(theta_cav_deg) )
     elif (ppar['modeCav'] == 'gridcenter'):
-        crit = ( th < np.deg2rad(ppar['thetDegCav']) )
+        crit = ( th < np.deg2rad(theta_cav_deg) )
     else:
-        raise ValueError('Unknown cavity mode: modeCav = {:s}'.format(
+        raise ValueError('ERROR [envelope_cavity]: Unknown cavity mode: modeCav = {:s}'.format(
             ppar['modeEnv'] ))
          
     dummy[crit] = dummy[crit] * ppar['redFactCav']

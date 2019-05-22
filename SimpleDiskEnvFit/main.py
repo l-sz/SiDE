@@ -670,7 +670,8 @@ class radmc3dModel:
         
     def runModel(self, bufsize=500000, nthreads=1, radmc3dexec=None,
                  mctherm=True, noscat=None, nphot_therm=None, nphot_scat=None,
-                 nphot_mcmono=None, impar=None, verbose=None, time=False):
+                 nphot_mcmono=None, impar=None, verbose=None, time=False,
+                 get_tdust=True):
         '''
         Run Monte Carlo dust radiation transport to determine dust temperature 
         and / or compute image according impar dictionary.
@@ -710,6 +711,10 @@ class radmc3dModel:
                 Image parameter(s). Known keywords are listed in the runImage()
                 method description. At least the wavelength (wav keyword) must 
                 be set for each images. Default is None.
+        get_tdust : bool
+                If True then read the dust temperature to data class variable.
+                If only image, SED and/or chi2 is needed the set to False.
+                Default is True.
         verbose : bool, optional
                 Print INFO messages to standard output. If set to None, then 
                 use verbose class variable. Default is None.
@@ -767,11 +772,11 @@ class radmc3dModel:
         # Terminate radmc3dRunner
         self.rrun.terminate(verbose=verbose)
         
-        # Read dust temperature
-        blockPrint()
-        # TODO: this is not necessary in current code use
-        self.data.readDustTemp(binary=self.binary)
-        enablePrint()
+        # Read dust temperature, if necessary
+        if get_tdust:
+            blockPrint()
+            self.data.readDustTemp(binary=self.binary)
+            enablePrint()
         
         os.chdir(current_dir)
         
@@ -887,8 +892,8 @@ class radmc3dModel:
                 chi2 = galario.double.chi2Image( imJyppix, dxy, u/wle, v/wle, 
                                                  Re, Im, w, dRA=dRA, dDec=dDec, 
                                                  PA=PA, check=galario_check )
-                # Determine number of non-zero (u,v) pairs
-                nvis = np.where(np.hypot(u/wle,v/wle) > 0.0).size
+                # Number of (u,v) pairs
+                nvis = u.shape[0]
 
                 self.chi2 = np.append(self.chi2, chi2)
                 self.nvis = np.append(self.nvis, nvis)

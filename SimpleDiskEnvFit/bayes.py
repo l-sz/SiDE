@@ -152,7 +152,7 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
         
         # If rTrunEnv is not a fit parameter then set it equal to rdisk.
         if parname[i] == 'rdisk':
-            modpar.setPar("rTrunEnv", "{}".format(val))
+            modpar.setPar(["rTrunEnv", "{}".format(val)])
 
         # Set the model parameters
         if parname[i] in modpar.ppar.keys():
@@ -230,7 +230,7 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     mod.write2folder()
 
     mod.runModel(impar=impar, mctherm=True, nphot_therm=100000, verbose=verbose,
-                 time=time)
+                 time=time, get_tdust=False)
 
     # Use the correct distance
     if type(impar) == list:

@@ -173,6 +173,21 @@ def read_chain_txt(filename='chain.txt'):
     Some metadata is returned (nthreads, nwalker, nstep, MPI).
     '''
     
+    # Read file header
+    f = open(filename, 'r')
+    header = f.readlines()[0:2]
+    f.close()
+    #
+    # Get parameter names
+    for i in range(2):
+        header[i] = header[i].replace('\n','').replace('# ','')
+    parname = header[1].split()[1:-1]
+    # 
+    # Get control parameters
+    chain_data0 = parse_karg(header[0].replace('\n',
+                   '').replace('# ','').split(','))
+
+    # Read data
     data = np.loadtxt(filename)
     
     iwalker = np.int32( data[:,0] )
@@ -192,11 +207,18 @@ def read_chain_txt(filename='chain.txt'):
         chain[i,:,:] = pos0[loc,:]
         lnprob[i,:] = lnprob0[loc]
     
-    # TODO: read it from file header
-    use_mpi = True
+    # Compare set and final control parameters
     
+    if chain_data0['nwalkers'] != nwalkers:
+        print (chain_data0['nwalkers'], nwalkers)
+        raise ValueError('nwalkers in header does not match chain size.')
+
+    if chain_data0['nsteps'] != nsteps:
+        print ('WARN: nsteps in header ({}) does not match chain size ({}), interrupted MCMC.'.format(nsteps, 
+                                                    chain_data0['nsteps']))
+        
     chain_data = {'lnprob': lnprob, 'nwalkers': nwalkers, 'nsteps': nsteps, 
-                  'ndim': ndim,'use_mpi': use_mpi}
+                  'ndim': ndim,'use_mpi': chain_data0['MPI']}
     
     return emcee_chain(chain, parname, kwargs=chain_data)
 
@@ -280,3 +302,14 @@ def read_chain_pickle(filename='chain.p'):
                   'nburnin':nburnin, 'visdata':visdata, 'impar':impar}
     
     return emcee_chain(data['chain'], parname, kwargs=chain_data)
+
+def parse_karg(string_list):
+    '''
+    Converts list of strings given in 'a = b' form to dictionary, where the key 
+    is 'a' and the value is eval(b).
+    '''
+    dic = {}
+    for s in string_list:
+        data = s.split('=')
+        dic[data[0].strip()] = eval(data[1].strip())
+    return dic

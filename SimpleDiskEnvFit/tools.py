@@ -1,3 +1,13 @@
+#
+# Tools for working with MCMC chain data.
+#
+# This file is part of the SimpleDiskEnvFit project.
+# https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnvFit
+#
+# Copyright (C) 2019 Laszlo Szucs <laszlo.szucs@mpe.mpg.de>
+# Licensed under GLPv2, for more information see the LICENSE file repository.
+#
+
 import corner
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,7 +19,6 @@ class emcee_chain():
     '''
     Class containing MCMC chain data and associated methods.
     '''
-    
     nwalkers = None
     ndim = None
     nsteps = None
@@ -26,9 +35,35 @@ class emcee_chain():
     impar = None
     
     def __init__(self, chain, parname, ndim=None, nwalkers=None, nsteps=None, 
-                 p_ranges=None, lnprob=None, **kwargs):
+                 p_ranges=None, **kwargs):
         '''
-        Initialise emcee_chain() instance.
+        Initialise emcee_chain() class instance.
+        
+        Parameters
+        ----------
+        chain   : array-like, float
+                Array with (nwalkers, nsteps, ndim) dimension containing parameter 
+                combinations explored by the MCMC walkers.
+                The chain must be specified in each emcee_chain instance.
+        parname : list, str
+                Names of fitted parameters. ndim element list of string. The 
+                list must be ordered to match the parameter order of the 3rd 
+                dimension of the chain array.
+        ndim    : int, optional
+                Number of fitted parameters. If not set, then it is determined 
+                from the shape of chain.
+        nwalkers: int, optional
+                Number of MCMC walkers used. If not set, then it is determined 
+                from the shape of chain.
+        nsteps  : int, optional
+                Number of MCMC steps taken by the walkers. If not set, then it is 
+                determined from the shape of chain.
+        p_range : list, float, optional
+                Fitted parameter range. p_range is a ndim element list, each 
+                element being a two element list. These give the minimum and 
+                maximum prior assumption on the fitted parameter.
+                This may be used in plotting routines.
+        **kwargs: dict, optional
         '''
         self.chain = chain
         self.parname = parname
@@ -66,9 +101,84 @@ class emcee_chain():
             self.visdata = kwargs['visdata']
         if 'impar' in kwargs.keys():
             self.impar = kwargs['impar']
+        if 'lnprob' in kwargs.keys():
+            self.lnprob = kwargs['lnprob']
+    
+    def __add__(self, other):
+        '''
+        Return the combined content of two emcee_chain class objects.
+        
+        Note: this operation is not commutative and not associative. It is assumed 
+              that in c = a+b, a precedes b in "time" (walker location).
+        '''
+        if isinstance(other, emcee_chain):
+            if self.parname != other.parname:
+                raise ValueError('Parameter names do not match. Aborting!')
+            
+            if self.nwalkers != other.nwalkers:
+                raise ValueError('Number of walkers does not match. Aborting!')
+            
+            ndim = self.ndim
+            nwalkers = self.nwalkers
+            parname = self.parname
+            nsteps = self.nsteps + other.nsteps
+            
+            # Assume that p_ranges are the same.
+            p_ranges = self.p_ranges
+            
+            # TODO: if accept_frac in self or other is None the set up NaN array and combined
+            
+            # TODO: 
+            nthreads = self.nthreads
+            nburnin = self.nburnin
+            # Take initial parameters from self.
+            if self.p0 != other.p0:
+                print ('WARN: p0 parameter differs, using p0 from first term.')
+            p0 = self.p0
+            #
+            if self.visdata != other.visdata:
+                print ('WARN: visdata parameter differs, using visdata from first term.')
+            visdata = self.visdata
+            #
+            if self.impar != other.impar:
+                print ('WARN: impar parameter differs, using impar from first term.')
+            impar = self.impar
+            #
+            # Combine lnprob
+            lnprob = self.lnprob, other.lnprob
+            if self.lnprob is None and other.lnprob is None:
+                lnprob = None
+            elif self.lnprob is None:
+                lnprob_self = np.ones(self.nsteps) * np.nan
+                lnprob = np.concatenate(lnprob_self, other.lnprob)
+            elif other.lnprob is None:
+                lnprob_other = np.ones(other.nsteps) * np.nan
+                lnprob = np.concatenate(self.lnprob, lnprob_other)
+            else:
+                lnprob = np.concatenate((self.lnprob, other.lnprob),axis=1)
+            #
+            # Combine chain data
+            chain = np.concatenate((self.chain, other.chain),axis=1)
+        else:
+            raise TypeError('Cannot add {} to emcee_chain instance.'.type(other))
+        
+        chain_data = {'lnprob': lnprob, 'nwalkers': nwalkers, 'nsteps': nsteps, 
+                  'ndim': ndim, 'p0':p0, 'visdata':visdata, 'impar':impar}
+    
+        return emcee_chain(chain, parname, **chain_data)
     
     def save(self, filename='chain_data.p'):
+        '''
+        Saves emcee_chain data to pickle file.
         
+        The output file is Python 2/3 compatible and is written to the local 
+        directory.
+        
+        Parameters
+        ----------
+        filename    : str, optional
+                    Name of output file. Default is chain_data.p.
+        '''
         results = {'chain': self.chain, 'accept_frac':self.accept_frac, 
                    'lnprob':self.lnprob, 'parname':self.parname, 
                    'p_ranges':self.p_ranges, 'p0':self.p0, 'ndim':self.ndim, 
@@ -83,6 +193,14 @@ class emcee_chain():
         
     def save_txt(self, filename='chain_data.txt'):
         '''
+        Saves emcee_chain data to ascii file.
+        
+        The output file is written to the local directory.
+        
+        Parameters
+        ----------
+        filename    : str, optional
+                    Name of output file. Default is chain_data.txt.
         '''
         print ('Function not implemented yet.')
         return
@@ -93,8 +211,19 @@ class emcee_chain():
         
         Parameters
         ----------
+        show    : bool, optional
+                Show walker path figure on screen. Set this to False in 
+                non-interactive script. Default is True.
+        save    : bool, optional
+                Save walker path figure plot to supported file format (e.g. 
+                pdf or png). The file name, including format is set by 
+                figname argument. Default is True.
+        figname : string, optional
+                File name of walker path figure. Used if save argument is True.
+                If no file path is specified, then figure is saved to the current 
+                directory. Default is walkers.pdf.
         '''
-        fig, ax = plt.subplots(self.ndim, 1, sharex=True)
+        fig, ax = plt.subplots(self.ndim, 1, sharex=True, figsize=(6,3*self.ndim))
         
         # loop over parameters
         for p in range(self.ndim):
@@ -107,13 +236,58 @@ class emcee_chain():
             # initial guess
             #ax[p].plot([0,nstep],[par[p],par[p]],'g-', linewidth=2)
         ax[-1].set_xlabel('step number')
-            
+        
+        if save:
+            plt.savefig(figname)
+
+        if show:
+            plt.show()
+        
+        return
+
+    def plot_lnprob(self, show=True, save=True, figname='posterior.pdf'):
+        '''
+        Plots the posterior probability of models explored by walkers.
+        
+        Parameters
+        ----------
+        show    : bool, optional
+                Show corner plot on screen. Set this to False in non-interactive 
+                script. Default is True.
+        save    : bool, optional
+                Save corner plot to supported file format (e.g. pdf or png). The 
+                file name, including format is set by figname argument. Default is 
+                True.
+        figname : string, optional
+                File name of corner plot figure. Used if save argument is True.
+                If no file path is specified, then figure is saved to the current 
+                directory. Default is posterior.pdf.
+        '''
+        if self.lnprob is None:
+            raise ValueError('lnprob class variable is not set.')
+        
+        fig, ax = plt.subplots(1, 1, sharex=True)
+        
+        for w in range(self.nwalkers):
+            ax.plot(self.lnprob[w,:],'-', linewidth=1)
+        ax.set_xlabel('step number')
+        ax.set_ylabel('$ln$(P)')
+        
+        if save:
+            plt.savefig(figname)
+
+        if show:
+            plt.show()
+        
         return
 
     def plot_corner(self, nburnin=0, range=None, full_range=False, show=True, 
-                    save=True, figname='corner.pdf'):
+                    save=True, figname='corner.pdf', **kwargs):
         '''
         Plots the posteriori distribution of the fitted parameters.
+
+        Method uses the corner package. Parameters can be passed to the corner 
+        package using kwargs.
 
         Parameters
         ----------
@@ -135,12 +309,12 @@ class emcee_chain():
                 script. Default is True.
         save    : bool, optional
                 Save corner plot to supported file format (e.g. pdf or png). The 
-                filename, including format is set by figname argument. Default is 
+                file name, including format is set by figname argument. Default is 
                 True.
         figname : string, optional
-                Filename of corner plot figure. Used if save argument is True.
-                If no file path is specified, then figure is saved to main_dir. 
-                Default is corner.pdf.
+                File name of corner plot figure. Used if save argument is True.
+                If no file path is specified, then figure is saved to the current 
+                directory. Default is corner.pdf.
         '''
         # Determine nsteps
         nstep = self.nsteps
@@ -155,7 +329,7 @@ class emcee_chain():
         fig1 = corner.corner(samples, labels=self.parname,
                             show_titles=True, quantiles=[0.16, 0.50, 0.84],
                             label_kwargs={'labelpad':20, 'fontsize':0}, 
-                            fontsize=8, range=range)
+                            fontsize=8, range=range, **kwargs)
         if save:
             plt.savefig(figname)
 
@@ -166,11 +340,20 @@ class emcee_chain():
 
 def read_chain_txt(filename='chain.txt'):
     '''
-    Reads data from chain file and prepares pos0 and lnprob0 for restarting 
-    the MCMC run. It also returns an array with previous results to be merged 
-    with new probability estimations for plotting.
+    Reads ascii format chain data to emcee_chain class instance.
+    
+    Use this method to read (in)complete chain files, written during execution.
+    Particularly useful for continuing incomplete MCMC chains.
+    
+    Parameters
+    ----------
+    filename    : str
+                Name of input file containing the chain data. Default is 
+                chain.txt.
 
-    Some metadata is returned (nthreads, nwalker, nstep, MPI).
+    Returns
+    -------
+    emcee_chain class instance, created from data in input file.
     '''
     
     # Read file header
@@ -216,24 +399,32 @@ def read_chain_txt(filename='chain.txt'):
     if chain_data0['nsteps'] != nsteps:
         print ('WARN: nsteps in header ({}) does not match chain size ({}), interrupted MCMC.'.format(nsteps, 
                                                     chain_data0['nsteps']))
-        
+    
     chain_data = {'lnprob': lnprob, 'nwalkers': nwalkers, 'nsteps': nsteps, 
                   'ndim': ndim,'use_mpi': chain_data0['MPI']}
     
-    return emcee_chain(chain, parname, kwargs=chain_data)
+    return emcee_chain(chain, parname, **chain_data)
 
 def read_chain_pickle(filename='chain.p'):
     '''
-    Reads data from chain file and prepares pos0 and lnprob0 for restarting 
-    the MCMC run. It also returns an array with previous results to be merged 
-    with new probability estimations for plotting.
+    Reads binary (pickle) format chain data to emcee_chain class instance.
+    
+    Use this method to analyse complete chain files.
+    
+    Parameters
+    ----------
+    filename    : str
+                Name of input file containing the chain data. Default is 
+                chain.txt.
 
-    Some metadata is returned (nthreads, nwalker, nstep, MPI).
+    Returns
+    -------
+    emcee_chain class instance, created from data in input file.
+    
+    Note: method tries compatibility mode if pickle read fails. (may occur on 
+    Python 3.7)
     '''
-    
     # Test whether file exists
-    
-    # Try to read pickle file (try compatibility mode if read fails)
     try:
         data = pickle.load(open(filename,'rb'))
     except:
@@ -301,7 +492,7 @@ def read_chain_pickle(filename='chain.p'):
                   'accept_frac':accept_frac, 'p0':p0, 'nthreads':nthreads, 
                   'nburnin':nburnin, 'visdata':visdata, 'impar':impar}
     
-    return emcee_chain(data['chain'], parname, kwargs=chain_data)
+    return emcee_chain(data['chain'], parname, **chain_data)
 
 def parse_karg(string_list):
     '''

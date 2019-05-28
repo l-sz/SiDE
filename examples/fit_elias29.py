@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import sys
 
 import SimpleDiskEnvFit
+from SimpleDiskEnvFit import tools
 
 from emcee import EnsembleSampler
 from emcee.utils import MPIPool
@@ -101,8 +102,7 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
                 'w':w2[use2], 'wav':3000.}]
 
     # Set image parameters
-    impar = [{'npix':512,'wav':1100.,'sizeau':11000,'incl':67.},
-             {'npix':512,'wav':3000.,'sizeau':11000,'incl':67.}]
+    impar = [{'npix':512,'wav':[1100.,3000.],'sizeau':11000,'incl':67.}]
 
     # Set parameters for bayes.lnpostfn() function
     kwargs = {'dpc': 125., 'incl': 67., 'impar': impar, 'verbose': verbose, 
@@ -138,13 +138,13 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
 
     # initialize the walkers with an ndim-dimensional Gaussian ball
     if resume:
-        resume_data = read_chain_file(restart_file)
-        if nwalkers != resume_data['nwalkers']:
+        resume_data = tools.read_chain_ascii(restart_file)
+        if nwalkers != resume_data.nwalkers:
             raise ValueError('ERROR: walker number does not match resume file.')
         pos = []
-        for pv in resume_data['chain'][:,-1,:]:
+        for pv in resume_data.chain[:,-1,:]:
             pos.append(pv)
-        lnprob0 = resume_data['lnprob'][:,-1]
+        lnprob0 = resume_data.lnprob[:,-1]
     else:
         pos = [p0 + 1.0e-2*np.random.randn(ndim) for i in range(nwalkers)]
         lnprob0 = None
@@ -229,110 +229,6 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
     os.chdir(current_dir)
     return results
 
-def plot_corner(main_dir, results=None, nburnin=0, range=None, show=True, 
-                save=True, figname='corner.pdf', full_range=False):
-    '''
-    Plots the posteriori distribution of the fitted parameters.
-
-    Parameters
-    ----------
-    main_dir : string
-            Main folder containing the observational constrain data, 
-            optical constants, parameter file, model run folders and 
-            <result_data>.p file containing the results of the fitting.
-    results : dict, optional
-            Dictionary output from run_mcmc() function.
-    nburnin : int, optional
-            Number of initial burn-in steps. These are not shown in figure.
-    range   : list, optional
-            Plotting ranges of each parameters given in a list of lists. The 
-            number of bundled 2 element list (min, max) must be equal to the 
-            number of fitted parameters (see also full_range). If not set, 
-            then corner routine decided.
-    show    : bool, optional
-            Show corner plot on screen. Set this to False in non-interactive 
-            script. Default is True.
-    save    : bool, optional
-            Save corner plot to supported file format (e.g. pdf or png). The 
-            filename, including format is set by figname argument. Default is 
-            True.
-    figname : string, optional
-            Filename of corner plot figure. Used if save argument is True.
-            If no file path is specified, then figure is saved to main_dir. 
-            Default is corner.pdf.
-    full_range : bool, optional
-            Show the complete fitting range (as contained in the results 
-            dictionary). If the range is broad and the models are localised 
-            this may lead to warning messages and hard to read figure. Default 
-            is False.
-    '''
-    current_dir = os.path.realpath('.')
-    os.chdir(main_dir)
-
-    # Restore results from file
-    if results is None:
-        results = pickle.load( open( 'elias29_mcmc_save.p','rb' ) )
-
-    os.chdir(current_dir)
-
-    chain = results['chain']
-
-    # Determine nsteps
-    nstep = chain.shape[1]
-    nstep = nstep - nburnin
-
-    # Get samples and ranges
-    samples = results['chain'][:, -nstep:, :].reshape((-1, results['ndim']))
-
-    if range is None and full_range:
-        range = results['p_ranges']
-
-    fig1 = corner.corner(samples, labels=results['parname'],
-                         show_titles=True, quantiles=[0.16, 0.50, 0.84],
-                         label_kwargs={'labelpad':20, 'fontsize':0}, 
-                         fontsize=8, range=range)
-    if save:
-        plt.savefig(figname)
-
-    if show:
-        plt.show()
-
-    return
-
-def read_chain_file(chain_file='chain.dat'):
-    '''
-    Reads data from chain file and prepares pos0 and lnprob0 for restarting 
-    the MCMC run. It also returns an array with previous results to be merged 
-    with new probability estimations for plotting.
-
-    Some metadata is returned (nthreads, nwalker, nstep, MPI).
-    '''
-    
-    data = np.loadtxt(chain_file)
-    
-    iwalker = np.int32( data[:,0] )
-    pos0 = data[:,1:-1]
-    lnprob0 = data[:,-1]
-    
-    # Determine MCMC parameters
-    nwalkers = iwalker.max() + 1
-    ndim = pos0.shape[1]
-    nsteps = np.int32(pos0.shape[0] / nwalkers)
-
-    chain = np.empty((nwalkers, nsteps, ndim))
-    lnprob = np.empty((nwalkers,nsteps))
-    
-    for i in range(nwalkers):
-        loc = np.where( i == iwalker )
-        chain[i,:,:] = pos0[loc,:]
-        lnprob[i,:] = lnprob0[loc]
-    
-    # TODO: read it from file header
-    use_mpi = True
-    
-    return {'chain': chain, 'lnprob': lnprob, 'nwalkers': nwalkers, 
-            'nsteps': nsteps, 'ndim': ndim,'use_mpi': use_mpi}
-
 if __name__ == "__main__":
     current_dir = os.path.realpath('.')
     run_mcmc(current_dir+'/elias29', use_mpi=True, verbose=True)
@@ -340,3 +236,7 @@ if __name__ == "__main__":
     #run_mcmc(current_dir+'/elias29', nsteps=300, nburnin=0, use_mpi=True, 
     #         resume=True, restart_file=current_dir+'/elias29/chain_0.dat',
     #         verbose=True)
+
+    # Read result chain file and plot corner figure:
+    results = tools.read_chain_pickle(current_dir+'/elias29_mcmc_save.p')
+    results.plot_corner(show=False, save=True)

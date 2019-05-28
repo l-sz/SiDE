@@ -338,7 +338,7 @@ class emcee_chain():
 
         return
 
-def read_chain_txt(filename='chain.txt'):
+def read_chain_ascii(filename='chain.dat'):
     '''
     Reads ascii format chain data to emcee_chain class instance.
     

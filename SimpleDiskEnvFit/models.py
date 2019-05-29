@@ -39,7 +39,7 @@ def ulrich_envelope(grid, ppar, cavity=False):
            If True, then envelope model has cavity. Default is False.
     '''
     rr, th = np.meshgrid(grid.x, grid.y, indexing='ij')
-    z0 = np.zeros([grid.nx, grid.nz, grid.nz], dtype=np.float64)
+    z0 = np.zeros([grid.nx, grid.ny, grid.nz], dtype=np.float64)
     zz   = rr * np.cos(th)
     rcyl = rr * np.sin(th)
 
@@ -78,7 +78,7 @@ def tafalla_envelope(grid, ppar, cavity=False):
            If True, then envelope model has cavity. Default is False.
     '''
     rr, th = np.meshgrid(grid.x, grid.y, indexing='ij')
-    z0 = np.zeros([grid.nx, grid.nz, grid.nz], dtype=np.float64)
+    z0 = np.zeros([grid.nx, grid.ny, grid.nz], dtype=np.float64)
     zz   = rr * np.cos(th)
     rcyl = rr * np.sin(th)
 
@@ -118,7 +118,7 @@ def powerlaw_envelope(grid, ppar, cavity=False):
            If True, then envelope model has cavity. Default is False.
     '''
     rr, th = np.meshgrid(grid.x, grid.y, indexing='ij')
-    z0 = np.zeros([grid.nx, grid.nz, grid.nz], dtype=np.float64)
+    z0 = np.zeros([grid.nx, grid.ny, grid.nz], dtype=np.float64)
     zz   = rr * np.cos(th)
     rcyl = rr * np.sin(th)
     
@@ -157,7 +157,7 @@ def envelope_cavity(rho, grid, ppar, modeCav=None):
            Dictionary provided by modPar.ppar (radmc3dPar object)
     '''
     rr, th = np.meshgrid(grid.x, grid.y, indexing='ij')
-    z0 = np.zeros([grid.nx, grid.nz, grid.nz], dtype=np.float64)
+    z0 = np.zeros([grid.nx, grid.ny, grid.nz], dtype=np.float64)
     zz   = rr * np.cos(th)
     rcyl = rr * np.sin(th)
     
@@ -197,6 +197,86 @@ def envelope_cavity(rho, grid, ppar, modeCav=None):
     
     return rho
 
+def slab(grid, r0=0.0, r1=0.0, H0=0.0, H1=0.0, rho0=0.0, sig0=None):
+    '''
+    Returns the dust density distribution of a slab between r0 and r1 radius and 
+    z0 and z1 in height. The slab is rectangular in Cartesian coordinates.
+    SimpleDiskEnvFit, however, uses spherical coordinate system, where the cells 
+    have curved shapes. Adding a slab with Hz < r will result in blocky density 
+    distribution.
+    
+    Furthermore a sharp block-like density distribution is not realistic in most 
+    protostar / protoplanetery disk cases. 
+    
+    The density and surface density parameters are understood as dust density. 
+    The user must consider the gas-to-dust ratio manually.
+    
+    Due to the grid and plausibility issues, the function returns a zero density 
+    array by default.
+    
+    Use this function with care!
+    
+    Parameters
+    ----------
+    grid : radmc3dPy.grid object
+           Initialized with the model boundaries.
+    r0    : float
+            Radial coordinate of the inner edge, in unit of cm. Default is 0.0
+    r1    : float
+            Radial coordinate of the outer edge, in unit of cm. Default is 0.0
+    H0    : float
+            Height of slab above mid-plane at inner edge (r=r0), in unit of cm. 
+            Default is 0.0.
+    H1    : float
+            Height of slab above mid-plane at outer edge (r=r1), in unit of cm. 
+            If H1 = 0.0 and H0 >= 0.0, then H1 = H0, the slab is rectangular. 
+            Default is 0.0.
+    rho0  : float
+            Dust mass density of the slab in units of g cm^-3. Default is 0.0.
+    sig0  : float, optional
+            Dust surface density of slab. If set the density is computed from 
+            sig0 and the slab height Hz. The unit is g cm^-2. Default is None.
+    '''
+    print ('Adding slab() component to the density distribution.\n'+
+           'This is not recommended for general use, use it with care!')
+    
+    rr, th = np.meshgrid(grid.x, grid.y, indexing='ij')
+    zz   = rr * np.cos(th)
+    rcyl = rr * np.sin(th)    
+    
+    # Set rectangular case
+    if H1 == 0.0:
+        H1 = H0
+        
+    # Compute height slope
+    if r1 > 0.0:
+        slope = (H1 - H0) / (r1 - r0)
+    else:
+        slope = 0.0
+    H = H0 + slope * rcyl
+    
+    if sig0 is not None:
+        rho0 = np.ones([grid.nx, grid.ny, grid.nz], dtype=np.float64)
+        rho = rho0 * sig0 / ( np.sqrt(2.*np.pi) * H.reshape((grid.nx, 
+                                                             grid.ny, 
+                                                             grid.nz)))
+    else:
+        rho = np.ones([grid.nx, grid.ny, grid.nz], dtype=np.float64) * rho0
+    
+    # Set criterion
+    crit_rad = ((rcyl >= r0) & (rcyl < r1))
+    crit_z   = zz <= H
+    crit = crit_rad & crit_z
+    
+    # Get density
+    dummy = np.zeros([grid.nx, grid.ny, grid.nz], dtype=np.float64)
+    dummy[crit] = rho[crit]
+    
+    rho_slab = np.zeros([grid.nx, grid.ny, grid.nz,1], dtype=np.float64)
+    rho_slab[:,:,:,0] = dummy
+    
+    return rho_slab
+    
 def flaring_disk(grid, ppar):
     '''
     Returns flaring disk density distribution. The distribution is described by 
@@ -216,7 +296,7 @@ def flaring_disk(grid, ppar):
            Dictionary provided by modPar.ppar (radmc3dPar object)
     '''
     rr, th = np.meshgrid(grid.x, grid.y, indexing='ij')
-    z0 = np.zeros([grid.nx, grid.nz, grid.nz], dtype=np.float64)
+    z0 = np.zeros([grid.nx, grid.ny, grid.nz], dtype=np.float64)
     zz   = rr * np.cos(th)
     rcyl = rr * np.sin(th)
     

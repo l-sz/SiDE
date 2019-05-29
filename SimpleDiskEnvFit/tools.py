@@ -191,7 +191,7 @@ class emcee_chain():
         
         return
         
-    def save_txt(self, filename='chain_data.txt'):
+    def save_ascii(self, filename='chain_data.dat'):
         '''
         Saves emcee_chain data to ascii file.
         

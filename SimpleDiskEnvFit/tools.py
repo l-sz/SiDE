@@ -205,7 +205,8 @@ class emcee_chain():
         print ('Function not implemented yet.')
         return
         
-    def plot_chain(self, show=True, save=True, figname='walkers.pdf'):
+    def plot_chain(self, show=True, save=True, gamma=1.0, alpha_floor=0.1,
+                   figname='walkers.pdf'):
         '''
         Plots the path taken by walkers for each fitted parameters.
         
@@ -225,13 +226,22 @@ class emcee_chain():
         '''
         fig, ax = plt.subplots(self.ndim, 1, sharex=True, figsize=(6,3*self.ndim))
         
+        if self.lnprob is None:
+            lnprob_max = 1.0
+            lnprob = np.ones((self.nwalkers,1))
+        else:
+            lnprob_max = self.lnprob.max()
+            lnprob = self.lnprob
+        
         # loop over parameters
         for p in range(self.ndim):
             ax[p].set_ylabel(self.parname[p])
             
             # path of individual walkers
             for w in range(self.nwalkers):
-                ax[p].plot(self.chain[w,:,p],'b-', linewidth=1)
+                chain_max = lnprob[w,:].max()
+                alpha = max([(10**chain_max / 10**lnprob_max)**gamma, alpha_floor])
+                ax[p].plot(self.chain[w,:,p],'b-', linewidth=1, alpha=alpha)
             
             # initial guess
             #ax[p].plot([0,nstep],[par[p],par[p]],'g-', linewidth=2)
@@ -245,7 +255,8 @@ class emcee_chain():
         
         return
 
-    def plot_lnprob(self, show=True, save=True, figname='posterior.pdf'):
+    def plot_lnprob(self, show=True, save=True, gamma=1.0, alpha_floor=0.1,
+                    figname='posterior.pdf'):
         '''
         Plots the posterior probability of models explored by walkers.
         
@@ -268,8 +279,12 @@ class emcee_chain():
         
         fig, ax = plt.subplots(1, 1, sharex=True)
         
+        lnprob_max = self.lnprob.max()
+        
         for w in range(self.nwalkers):
-            ax.plot(self.lnprob[w,:],'-', linewidth=1)
+            chain_max = self.lnprob[w,:].max()
+            alpha = max([(10**chain_max / 10**lnprob_max)**gamma, alpha_floor])
+            ax.plot(self.lnprob[w,:],'-', linewidth=1, alpha=alpha)
         ax.set_xlabel('step number')
         ax.set_ylabel('$ln$(P)')
         
@@ -317,11 +332,13 @@ class emcee_chain():
                 directory. Default is corner.pdf.
         '''
         # Determine nsteps
+        if nburnin < 0:
+            print ("WARN: nburnin < 0: all steps are plotted!")
         nstep = self.nsteps
         nstep = nstep - nburnin
 
         # Get samples and ranges
-        samples = self.chain[:, -nstep:, :].reshape((-1, self.ndim))
+        samples = self.chain[:, -(nstep):, :].reshape((-1, self.ndim))
 
         if range is None and full_range:
             range = self.p_ranges

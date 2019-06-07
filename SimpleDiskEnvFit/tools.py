@@ -219,6 +219,14 @@ class emcee_chain():
                 Save walker path figure plot to supported file format (e.g. 
                 pdf or png). The file name, including format is set by 
                 figname argument. Default is True.
+        gamma   : float, optional
+                Sets the scaling between line transparency and lnprob (posterior
+                probability of the model. gamma > 1 one emphesises the chains 
+                with the highest likelihood, gamma = 0 show all chains with 
+                solid, non-transparent line. Default value is 1.0.
+        alpha_floor : float, optional
+                Lower limit on transparency value. This is used to make sure 
+                all models are visible on the figure. Default value is 0.1.
         figname : string, optional
                 File name of walker path figure. Used if save argument is True.
                 If no file path is specified, then figure is saved to the current 
@@ -269,6 +277,14 @@ class emcee_chain():
                 Save corner plot to supported file format (e.g. pdf or png). The 
                 file name, including format is set by figname argument. Default is 
                 True.
+        gamma   : float, optional
+                Sets the scaling between line transparency and lnprob (posterior
+                probability of the model. gamma > 1 one emphesises the chains 
+                with the highest likelihood, gamma = 0 show all chains with 
+                solid, non-transparent line. Default value is 1.0.
+        alpha_floor : float, optional
+                Lower limit on transparency value. This is used to make sure 
+                all models are visible on the figure. Default value is 0.1.
         figname : string, optional
                 File name of corner plot figure. Used if save argument is True.
                 If no file path is specified, then figure is saved to the current 

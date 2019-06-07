@@ -240,6 +240,11 @@ class emcee_chain():
         else:
             lnprob_max = self.lnprob.max()
             lnprob = self.lnprob
+        # Scale lnprob if it is too small (to avoid division by zero)
+        if lnprob_max < -300.:
+            scale = abs(lnprob_max)
+        else:
+            scale = 1.0
         
         # loop over parameters
         for p in range(self.ndim):
@@ -248,7 +253,8 @@ class emcee_chain():
             # path of individual walkers
             for w in range(self.nwalkers):
                 chain_max = lnprob[w,:].max()
-                alpha = max([(10**chain_max / 10**lnprob_max)**gamma, alpha_floor])
+                alpha = max([(10**(chain_max/scale) / 10**(lnprob_max/scale))**gamma, 
+                            alpha_floor])
                 ax[p].plot(self.chain[w,:,p],'b-', linewidth=1, alpha=alpha)
             
             # initial guess
@@ -296,10 +302,16 @@ class emcee_chain():
         fig, ax = plt.subplots(1, 1, sharex=True)
         
         lnprob_max = self.lnprob.max()
+        # Scale lnprob if it is too small (to avoid division by zero)
+        if lnprob_max < -99.:
+            scale = abs(lnprob_max)
+        else:
+            scale = 1.0
         
         for w in range(self.nwalkers):
             chain_max = self.lnprob[w,:].max()
-            alpha = max([(10**chain_max / 10**lnprob_max)**gamma, alpha_floor])
+            alpha = max([(10**(chain_max/scale) / 10**(lnprob_max/scale))**gamma, 
+                         alpha_floor])
             ax.plot(self.lnprob[w,:],'-', linewidth=1, alpha=alpha)
         ax.set_xlabel('step number')
         ax.set_ylabel('$ln$(P)')

@@ -139,11 +139,13 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     for i in range(len(parname)):
         
         # Special cases
-        if parname[i] == 'mdisk':
+        if parname[i] in ['mdisk','m_slab']:
             val = 10.0**p[i] * nc.ms
-        elif parname[i] == 'rho0Env':
+        elif parname[i] in ['rho0Env','rho0_slab']:
             val = 10**p[i]
         elif parname[i] in ['rdisk','r0Env','rTrunEnv']:
+            val = 10**p[i] * nc.au
+        elif parname[i] in ['r0_slab','r1_slab','h0_slab','h1_slab']:
             val = 10**p[i] * nc.au
         elif parname[i][0:3] == 'gsm': # gsmin or gsmax
             val = 10.0**p[i]

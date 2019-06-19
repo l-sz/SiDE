@@ -88,7 +88,7 @@ class radmc3dModel:
     rrun = None
     
     def __init__(self, modpar=None, model_dir=None, resource_dir=None, 
-                 idisk=True, ienv=True, icav=False, iext=False,
+                 idisk=True, islab=False, ienv=True, icav=False, iext=False,
                  write2folder=False, ID=None, verbose=False, binary=False):
         '''
         Self contained RADMC-3D model class. 
@@ -123,8 +123,12 @@ class radmc3dModel:
                 Path (absolute or relative) to the folder containing additional 
                 files (e.g. dust opacity or lnk files) that are needed to create 
                 the model. Defaults to {SIMPLEDISKENVFIT_HOME}/lnk_files.
-        idik :  bool
+        idisk : bool
                 If True, then include disk in model. Default is True.
+        islab : bool,
+                If True, then inlculde slab density distribution in model. 
+                Note that islab and idisk should not be set True at the same 
+                time! Default is False.
         ienv :  bool
                 If True, then include envelope in model. Default is True.
         icav :  bool
@@ -192,6 +196,9 @@ class radmc3dModel:
         # Update control parameters
         self.modpar.setPar(['idisk',str(idisk),' Include disk in model?',
                                 'Disk parameters'])
+        
+        self.modpar.setPar(['islab',str(islab),' Include slab in model?',
+                                'Slab parameters'])
         
         self.modpar.setPar(['ienv',str(ienv),' Include envelope in model?',
                             'Envelope parameters'])
@@ -334,6 +341,14 @@ class radmc3dModel:
             rho_disk_dust, self.mdisk, self.sig0 = \
                 models.flaring_disk(self.grid, ppar=ppar)
 
+        if ppar['islab'] == True:
+            if ppar['idisk'] == True:
+                print('WARN: idisk and islab is both True, only slab is used!')
+                rho_disk_dust = np.zeros_like(rho_disk_dust)
+                
+            rho_disk_dust, self.mdisk, self.sig0 = \
+                models.slab_wrapper(self.grid, ppar=ppar)
+
         if ppar['ienv'] == True:
             
             if (ppar['modeEnv'] == 'Ulrich1976'):
@@ -360,7 +375,7 @@ class radmc3dModel:
             print ("WARN [{:06}]: ngpop not defined in parameter file, \
                     using {:2} dust species".format(self.ID, ngpop))
         
-        if ngpop == 2 and ppar['idisk'] and ppar['ienv']:
+        if ngpop == 2 and (ppar['idisk'] or ppar['islab']) and ppar['ienv']:
             rhodust = np.zeros([self.grid.nx, self.grid.ny, self.grid.nz, ngpop])
             rhodust[:,:,:,0] = rho_disk_dust[:,:,:,0]
             rhodust[:,:,:,1] = rho_env_dust[:,:,:,0]
@@ -381,6 +396,11 @@ class radmc3dModel:
         '''
         if self.verbose:
             print('INFO [{:06}]: Writing {}'.format(self.ID, fname))
+            
+        if self.grid is None:
+            raise ValueError('_writeSourceExternal called before grid is set.')
+        
+        nwav = self.grid.nwav
         
         wfile = open(fname, 'w')
         wfile.write('%d\n'%2)     # this is the format, should be 2 always

@@ -66,4 +66,12 @@ rTrunEnv                  = 15*au            # Truncation radius
 rho0Env                   = 1.0e-21          # New central density gr/cm3 dust density volume
 r0Env                     = 300.0*au         # Within this radius the density profile is flat
 thetac_deg                = 30               # Opening angle of the cavity
-
+# -----------------------------------------------------------------------------
+# Block: Slab parameters
+# -----------------------------------------------------------------------------
+# h0_slab                   = 10.0*au           # Slab inner height [cm]
+# h1_slab                   = 100.0*au          # Slab outer height [cm]
+# r0_slab                   = 30.0*au           # Slab inner radius [cm]
+# r1_slab                   = 1000.0*au         # Slab outer radius [cm]
+# #sig0_slab                 = 1.0e-4            # Sigma0 [gram/cm**2]
+# m_slab                    = 0.01*ms           # Slab mass [gram]

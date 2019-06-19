@@ -197,7 +197,7 @@ def envelope_cavity(rho, grid, ppar, modeCav=None):
     
     return rho
 
-def slab(grid, r0=0.0, r1=0.0, H0=0.0, H1=0.0, rho0=0.0, sig0=None):
+def slab(grid, r0=0.0, r1=0.0, H0=0.0, H1=0.0, rho0=0.0, sig0=None, smoothed=True):
     '''
     Returns the dust density distribution of a slab between r0 and r1 radius and 
     z0 and z1 in height. The slab is rectangular in Cartesian coordinates.
@@ -236,9 +236,15 @@ def slab(grid, r0=0.0, r1=0.0, H0=0.0, H1=0.0, rho0=0.0, sig0=None):
     sig0  : float, optional
             Dust surface density of slab. If set the density is computed from 
             sig0 and the slab height Hz. The unit is g cm^-2. Default is None.
+    smoothed : bool, optional
+            If True then the vertical density distribution is smoothed with a 
+            gaussian (standard deviation of H(r)). The surface density remains 
+            the same regardless the parameter, however the density becomes a 
+            function of z height. This helps to remove abrupt edges in the 
+            density distribution, which appear because of the cartesian slab 
+            geometry expressed in spherical coordinates.
+            Default value is True.
     '''
-    print ('Adding slab() component to the density distribution.\n'+
-           'This is not recommended for general use, use it with care!')
     
     rr, th = np.meshgrid(grid.x, grid.y, indexing='ij')
     zz   = rr * np.cos(th)
@@ -256,17 +262,18 @@ def slab(grid, r0=0.0, r1=0.0, H0=0.0, H1=0.0, rho0=0.0, sig0=None):
     H = H0 + slope * rcyl
     
     if sig0 is not None:
+        H_re = H.reshape((grid.nx, grid.ny, grid.nz))
         rho0 = np.ones([grid.nx, grid.ny, grid.nz], dtype=np.float64)
-        rho = rho0 * sig0 / ( np.sqrt(2.*np.pi) * H.reshape((grid.nx, 
-                                                             grid.ny, 
-                                                             grid.nz)))
+        rho = rho0 * sig0 / ( np.sqrt(2.*np.pi) * H_re)
     else:
         rho = np.ones([grid.nx, grid.ny, grid.nz], dtype=np.float64) * rho0
+    
+    rho = rho * np.exp(-0.5 * zz.reshape((grid.nx, grid.ny, grid.nz))**2 / H_re**2)
     
     # Set criterion
     crit_rad = ((rcyl >= r0) & (rcyl < r1))
     crit_z   = zz <= H
-    crit = crit_rad & crit_z
+    crit = crit_rad #& crit_z
     
     # Get density
     dummy = np.zeros([grid.nx, grid.ny, grid.nz], dtype=np.float64)
@@ -276,6 +283,95 @@ def slab(grid, r0=0.0, r1=0.0, H0=0.0, H1=0.0, rho0=0.0, sig0=None):
     rho_slab[:,:,:,0] = dummy
     
     return rho_slab
+    
+def slab_wrapper(grid, ppar):
+    '''
+    Extracts slab parameters from the ppar structure and generates the density 
+    distribution. The density distribution, mass and surface density is returned.
+    
+    The slab is described by the following parameters (see docstring of slab 
+    function): r0 (inner radius), r1 (outer radius), H0 (height at r0), H1 
+    (height at r1), rho0 (constant density) or sig0 (constant surface density).
+    
+    The parameters are extracted from ppar as follows:
+    
+    r0 : float
+         Radial location of slab inner edge. Set by 'r0_slab' keyword. If 
+         not set, then r0 = 0.01au.
+    r1 : float 
+         Radial location of slab outer edge. Set by 'r1_slab' keyword. If not 
+         set, then r1 = 1.0au.
+    H0 : float
+         Slab height at inner edge. Set by the hr0_slab keyword. If keyword is 
+         not set, then H0 = H1.
+    H1 : float
+         Slab height at outer edge. Set by the hr1_slab keyword. If keyword is 
+         not set, then H1 = r1.
+    sig0 : float
+         Constant surface density of the slab. Set by sig0_slab parameter. If it 
+         is not set, then sig0 = m_slab / A_d, where A_d is the disk surface 
+         area.
+    rho0 : float
+         Constant density of the slab. Set by rho0_slab parameter. If it is not 
+         set, then rho0 = 0.0. Note that if sig0_slab and rho0_slab are both 
+         set, then sig0_slab is used.
+    '''
+    params = ppar.keys()
+    
+    print ('Adding slab() component to the density distribution.\n'+
+           'This is not recommended for general use, use it with care!')
+    
+    if ('r0_slab' in params):
+        r0 = ppar['r0_slab']
+    else:
+        print ("WARN: r0_slab not set, using 0.01 au.")
+        r0 = 0.01 * radmc3dPy.natconst.au
+    if ('r1_slab' in params):
+        r1 = ppar['r1_slab']
+    else:
+        print ("WARN: r1_slab not set, using 1.0 au.")
+        r1 = 1.0 * radmc3dPy.natconst.au
+    if ('h1_slab' in params):
+        H1 = ppar['h1_slab']
+    else:
+        print ("WARN: h1_slab not set, using h1_slab = r1_slab.")
+        H1 = r1
+    if ('h0_slab' in params):
+        H0 = ppar['h0_slab']
+    else:
+        print ("WARN: h0_slab not set, using h0_slab = h1_slab.")
+        H0 = H1
+    if ('sig0_slab' in params):
+        sig0 = ppar['sig0_slab']
+    elif ('m_slab' in params):
+        print ("WARN: sig0_slab not set, computing from m_slab.")
+        sig0 = ppar['m_slab'] / np.pi / (r1 - r0)**2
+    else:
+        print ("WARN: sig0_slab and m_slab not set, setting sig0 = 0.0.")
+        sig0 = None
+    if ('rho0_slab' in params):
+        rho0 = ppar['rho0_slab']
+    else:
+        print ("WARN: rho0_slab not set, setting rho0 = 0.0.")
+        rho0 = 0.0
+    
+    # Compute mass:
+    if sig0 is not None:
+        mass = sig0 * np.pi * (r1 - r0)**2
+        sig = sig0
+    elif rho0 is not None:
+        # Note that this assumes H1 >= H0
+        mass = rho0 * np.pi * (r1 - r0)**2 * (H0 + (H1-H0)/2.0)
+        # Note that this assumes Sigma is constant with r
+        sig = mass / np.pi / (r1 - r0)**2
+    else:
+        mass = 0.0
+        sig = None
+
+    rho_slab = slab(grid, r0=r0, r1=r1, H0=H0, H1=H1, rho0=rho0, sig0=sig0,
+                    smoothed=True)
+    
+    return (rho_slab, mass, sig)
     
 def flaring_disk(grid, ppar):
     '''
@@ -441,10 +537,10 @@ def ISradField(grid, ppar, G=1.7, show=False):
 
     # Create the black body components of the Black (1994) radiation field:
     # see: https://ui.adsabs.harvard.edu/#abs/1994ASPC...58..355B/abstract
-    p = [0., 0., 0., 0., -1.65, 0.]
-    T = [7500.,4000.,3000.,250.,23.3,2.728]
-    W = [1e-14, 1e-13, 4e-13, 3.4e-09, 2e-4, 1.]
-    lp = [0.4,0.75,1.,1.,140.,1060.]
+    p = [0.0, 0.0, 0.0, 0.0, -1.65, 0.0]
+    T = [7500.0,4000.0,3000.0,250.0,23.3,2.728]
+    W = [1.0e-14, 1.0e-13, 4.0e-13, 3.4e-09, 2.0e-4, 1.0]
+    lp = [0.4,0.75,1.0,1.0,140.0,1060.0]
     
     IBlack = np.zeros(nwav)
 
@@ -501,3 +597,4 @@ def ISradField(grid, ppar, G=1.7, show=False):
         plt.ylabel('intensity [erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$ sr$^{-1}$]')
         plt.show()
   
+    return Iisrf

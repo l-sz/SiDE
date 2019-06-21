@@ -67,6 +67,8 @@ class radmc3dModel:
     
     # Computed model parameters
     mdisk = 0.0
+    m_slab = 0.0
+    sig0_slab = 0.0
     menv = 0.0
     menv3000 = 0.0
     sig0 = 0.0
@@ -335,6 +337,8 @@ class radmc3dModel:
                                  dtype=np.float64)
         rho_env_dust = np.zeros([self.grid.nx, self.grid.ny, self.grid.nz, 1], 
                                 dtype=np.float64)
+        rho_slab_dust = np.zeros([self.grid.nx, self.grid.ny, self.grid.nz, 1], 
+                                dtype=np.float64)
         
         if ppar['idisk'] == True:
             
@@ -342,11 +346,8 @@ class radmc3dModel:
                 models.flaring_disk(self.grid, ppar=ppar)
 
         if ppar['islab'] == True:
-            if ppar['idisk'] == True:
-                print('WARN: idisk and islab is both True, only slab is used!')
-                rho_disk_dust = np.zeros_like(rho_disk_dust)
                 
-            rho_disk_dust, self.mdisk, self.sig0 = \
+            rho_slab_dust, self.m_slab, self.sig0_slab = \
                 models.slab_wrapper(self.grid, ppar=ppar)
 
         if ppar['ienv'] == True:
@@ -375,10 +376,20 @@ class radmc3dModel:
             print ("WARN [{:06}]: ngpop not defined in parameter file, \
                     using {:2} dust species".format(self.ID, ngpop))
         
-        if ngpop == 2 and (ppar['idisk'] or ppar['islab']) and ppar['ienv']:
+        if ngpop == 2 and ppar['idisk'] and ppar['ienv']:
             rhodust = np.zeros([self.grid.nx, self.grid.ny, self.grid.nz, ngpop])
             rhodust[:,:,:,0] = rho_disk_dust[:,:,:,0]
             rhodust[:,:,:,1] = rho_env_dust[:,:,:,0]
+            if ppar['islab']:
+                if self.verbose:
+                    print('INFO [{:06}]: Adding slab to envelope.'.format(self.ID))
+                rhodust[:,:,:,1] += rho_slab_dust[:,:,:,0]
+            self.data.rhodust = rhodust
+        elif ngpop == 3 and ppar['idisk'] and ppar['islab'] and ppar['ienv']:
+            rhodust = np.zeros([self.grid.nx, self.grid.ny, self.grid.nz, ngpop])
+            rhodust[:,:,:,0] = rho_disk_dust[:,:,:,0]
+            rhodust[:,:,:,1] = rho_env_dust[:,:,:,0]
+            rhodust[:,:,:,2] = rho_slab_dust[:,:,:,0]
             self.data.rhodust = rhodust
         else:
             self.data.rhodust = rho_env_dust + rho_disk_dust

@@ -153,7 +153,7 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
             val = p[i]
         
         # If rTrunEnv is not a fit parameter then set it equal to rdisk.
-        if parname[i] == 'rdisk':
+        if parname[i] == 'rdisk' and 'rTrunEnv' in modpar.ppar.keys():
             modpar.setPar(["rTrunEnv", "{}".format(val)])
 
         # Set the model parameters
@@ -162,22 +162,28 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
                 modpar.setPar([parname[i], "{}".format(val)])
             else:
                 modpar.setPar([parname[i], "{:10.6E}".format(val)])
-        elif parname[i] =='gsmax_env':
-            tmp = modpar.ppar['gsmax']
-            tmp[1] = val
-            modpar.setPar(['gsmax', "{}".format(tmp)])
-        elif parname[i] =='gsmax_disk':
-            tmp = modpar.ppar['gsmax']
-            tmp[0] = val
-            modpar.setPar(['gsmax', "{}".format(tmp)])
-        elif parname[i] =='gsmin_env':
-            tmp = modpar.ppar['gsmin']
-            tmp[1] = val
-            modpar.setPar(['gsmin', "{}".format(tmp)])
-        elif parname[i] =='gsmin_disk':
-            tmp = modpar.ppar['gsmin']
-            tmp[0] = val
-            modpar.setPar(['gsmin', "{}".format(tmp)])
+        elif parname[i][0:3] == 'gsm':
+
+            if modpar.ppar['ngpop'] != len(modpar.ppar['gsmax']):
+                raise ValueError('ERROR [lnpostfn()]: ngpop != len(gsmax).')
+            if modpar.ppar['ngpop'] != len(modpar.ppar['gsmin']):
+                raise ValueError('ERROR [lnpostfn()]: ngpop != len(gsmax).')        
+        
+            typ_tmp = parname[i][0:5]   # min or max
+            nam_tmp = parname[i][6:]    # disk / env / slab
+        
+            tmp = modpar.ppar[typ_tmp]
+        
+            pos = {'disk': 0,
+                   'env' : 1,
+                   'slab': 2}
+        
+            if nam_tmp in pos.keys():
+                tmp[pos[nam_tmp]] = val
+                modpar.setPar([typ_tmp, "{}".format(tmp)])
+            else:
+                raise ValueError(
+                    'ERROR [lnpostfn()]: unknown component {}.'.format(nam_tmp))
         elif parname[i] == 'dpc':
             dpc = val
         elif parname[i] == 'incl':
@@ -252,4 +258,28 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     if verbose:
         print ("INFO [{:06}]: model ch^2 = {:10.6E}".format(rand, chi2))
 
+    return chi2
+
+def relative_chi2(mod):
+    '''
+    '''
+    if mod.vis_inp is None:
+        print ('Warn: vis_inp not in radmc3dModel object!')
+        return np.nan
+    if mod.vis_mod is None:
+        print ('Warn: vis_mod not in radmc3dModel object!')
+        return np.nan
+    
+    nvis = len(mod.nvis)
+    chi2 = 0.0
+    
+    for i in range(nvis):
+        
+        w = mod.vis_inp[i].weights
+        
+        tmp = np.sum( w * (mod.vis_inp[i].re - mod.vis_mod[i].re)**2/abs(mod.vis_mod[i].re) + 
+                              (mod.vis_inp[i].im - mod.vis_mod[i].im)**2/abs(mod.vis_mod[i].im) ) / mod.nvis[i]
+        print (tmp)
+        chi2 = chi2 + tmp
+    
     return chi2

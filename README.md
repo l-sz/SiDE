@@ -39,12 +39,12 @@ Requirements:
 
 **Importnat:** 
 
-The current release of RADMC-3D (version 0.41) needs to be patched before model 
-fitting. Replace `main.f90` with `radmc3d_path_main.f90` in  
+The current release of RADMC-3D (version 0.41) needs to be patched before running 
+this code. Replace `main.f90` with `radmc3d_patch/main_patch.f90` in  
 ```bash
 $RADMC3D_PATH/version_0.41/src
 ```
-folder and recompile code. The patch is already merged to the developement 
+folder and recompile code. The patch is already merged to the development 
 branch of RADMC-3D, but have not been released yet.
 
 Installation:

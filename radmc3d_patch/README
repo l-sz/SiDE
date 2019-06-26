@@ -1,0 +1,16 @@
+Child mode patch for RADMC-3D version 0.41 and earlier
+------------------------------------------------------
+
+In RADMC-3D version 0.41 and earlier the number of photons used in the thermal 
+Monte Carlo radiative transfer was not configurable in child mode by piping 
+commands to the code.
+
+To fix this issue, overwrite main.f90 file in $RADMC3D_PATH/src folder by 
+main_patch.f90 file and execute the following command:
+
+```bash
+make clean ; make ; make install
+```
+
+Note: the issue is resolved in the development version of RADMC-3D. As of 
+      26.06.2019 no new stable release containing the patch was issued. 

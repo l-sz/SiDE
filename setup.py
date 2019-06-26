@@ -11,7 +11,8 @@ except ImportError:
 
 setup(name='SimpleDiskEnvFit',
       version='0.1',
-      install_requires=['radmc3dPy', 'corner', 'emcee', 'uvplot'],
+      install_requires=['radmc3dPy >= 0.30.2', 'corner >= 2.0.0', 'emcee == 2.2.1',
+			'uvplot >= 0.2.8'],
       extras_require={'galario':['galario']},
       dependency_links=['https://www.ast.cam.ac.uk/~juhasz/radmc3dPyDoc/_downloads/radmc3dPy-0.30.2.tar.gz'],
       provides=['SimpleDiskEnvFit'],

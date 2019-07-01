@@ -43,7 +43,7 @@ def lnpriorfn(p, par_ranges):
         if p[i] < np.min(par_ranges[i]) or p[i] > np.max(par_ranges[i]):
             return -np.inf
 
-    jacob = -p[0]       # jacobian of the log transformation
+    jacob = 0.0       # jacobian of the log transformation
 
     return jacob
 
@@ -129,6 +129,8 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
 
     lnprior = lnpriorfn(p, p_ranges)  # apply prior
     if not np.isfinite(lnprior):
+        if verbose:
+            print ("INFO: model rejected", p)
         return -np.inf
 
     if len(p) != len(parname):
@@ -253,7 +255,7 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     if cleanModel:
         mod.cleanModel()
 
-    chi2 = -0.5 * np.sum(mod.chi2/mod.nvis) + lnprior
+    chi2 = -0.5 * np.sum(mod.chi2) + lnprior
     
     if verbose:
         print ("INFO [{:06}]: model ch^2 = {:10.6E}".format(rand, chi2))

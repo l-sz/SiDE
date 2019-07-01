@@ -96,10 +96,11 @@ def run_mcmc(main_dir, nthreads=8, nwalkers=40, nsteps=1000, nburnin=100,
     use2 = np.where(np.hypot(u2,v2)/(3.3e-3) <= 5.0e4)   # Select only data below 50 klambda
 
     # Bundle visibility data
+    # Note: PA, dRA and dDec may be overwritten by values provided in kwargs.
     visdata = [{'u':u1[use1], 'v':v1[use1], 'Re':Re1[use1], 'Im':Im1[use1], 
-                'w':w1[use1], 'wav':1100.},
+                'w':w1[use1], 'wav':1100., 'PA':0.0, 'dRA':0.0, 'dDec': 0.0},
                {'u':u2[use2], 'v':v2[use2], 'Re':Re2[use2], 'Im':Im2[use2], 
-                'w':w2[use2], 'wav':3000.}]
+                'w':w2[use2], 'wav':3000.}, 'PA':0.0, 'dRA':0.0, 'dDec': 0.0]
 
     # Set image parameters
     impar = [{'npix':512,'wav':[1100.,3000.],'sizeau':11000,'incl':67.}]

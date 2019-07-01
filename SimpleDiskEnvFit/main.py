@@ -813,7 +813,7 @@ class radmc3dModel:
         
         return 0
         
-    def getVis(self, uvdata, dpc=1.0, PA=0., dRA=0.0, dDec=0.0, chi2_only=False, 
+    def getVis(self, uvdata, dpc=1.0, PA=None, dRA=None, dDec=None, chi2_only=False, 
                galario_check=False, verbose=None, time=False):
         '''
         Compute visibility of previously computed images and their chi2 
@@ -826,12 +826,30 @@ class radmc3dModel:
                 'w' and 'wav' keywords need to be defined.
         dpc  :  float
                 Distance to object in unit of parsec, Default is 1.0.
-        PA   :  float, optional
-                Position angle in radian. Default is 0.0.
-        dRA  :  float, optional
-                Offset in RA in radian. Default is 0.0.
-        dDec :  float, optional
-                Offset in Dec in radian. Default is 0.0.
+        PA   :  float or list of floats, optional
+                Position angle in radian. If multiple images are processed, then 
+                each image may use a different PA value, if a list is provided. 
+                The order used is the same as in the uvdata list. The PA value 
+                provided in uvdata will be overruled by the value provided as 
+                an argument in the function call. If PA is not set in visdata 
+                and PA is None in the function call, then PA = 0.0 is used.
+                Default is None.
+        dRA  :  float or list of floats, optional
+                Offset in RA in radian. If multiple images are processed, then 
+                each image may use a different dRA value, if a list is provided. 
+                The order used is the same as in the uvdata list. The dRA value 
+                provided in uvdata will be overruled by the value provided as 
+                an argument in the function call. If dRA is not set in visdata 
+                and dRA is None in the function call, then dRA = 0.0 is used.
+                Default is None.
+        dDec :  float or list of floats, optional
+                Offset in Dec in radian. If multiple images are processed, then 
+                each image may use a different PA value, if a list is provided. 
+                The order used is the same as in the uvdata list. The dDec value 
+                provided in uvdata will be overruled by the value provided as 
+                an argument in the function call. If dDec is not set in visdata 
+                and dDec is None in the function call, then dDec = 0.0 is used.
+                Default is None.
         chi2_only : bool
                 If True then the synthetic visibility itself is not computed and 
                 stored (a zero value array is stored instead). The chi2 is still
@@ -864,6 +882,25 @@ class radmc3dModel:
             if type(uvdata) == dict:
                 uvdata = [uvdata]
 
+            n_uvdata = len(uvdata)
+
+            # Set default offsets
+            if type(PA) is list:
+                n_PA = len(PA)
+                if n_PA != n_uvdata:
+                    raise ValueError('PA list ({}) and uvdata ({})element numbers do not match!'.format(
+                        n_PA,n_uvdata))
+            if type(dRA) is list:
+                n_dRA = len(dRA)
+                if n_dRA != n_uvdata:
+                    raise ValueError('dRA list ({}) and uvdata ({})element numbers do not match!'.format(
+                        n_dRA,n_uvdata))
+            if type(dDec) is list:
+                n_dDec = len(dDec)
+                if dDec != n_uvdata:
+                    raise ValueError('dDec list ({}) and uvdata ({})element numbers do not match!'.format(
+                        n_dDec,n_uvdata))
+
             wav_arr = []
             for im in self.image:
                 wav_arr.append(im.wav[0])
@@ -871,8 +908,10 @@ class radmc3dModel:
             # Set galario threads to 1, parallelisation is done by emcee and MPI
             galario.double.threads(1)
 
-            for uv in uvdata:
-
+            for i in range(len(uvdata)):
+                
+                uv = uvdata[i]
+                
                 # extract uv data from dictionary
                 u = np.ascontiguousarray(uv['u'])
                 v = np.ascontiguousarray(uv['v'])
@@ -880,6 +919,37 @@ class radmc3dModel:
                 Im = np.ascontiguousarray(uv['Im'])
                 w = np.ascontiguousarray(uv['w'])
                 wav = uv['wav']
+                
+                uv_keywords = uv.keys()
+                
+                # Set offsets
+                if PA is not None:
+                    if type(PA) is list:
+                        PA_use = PA[i]
+                    else:
+                        PA_use = PA
+                elif 'PA' in uv_keywords:
+                    PA_use = uv['PA']
+                else:
+                    PA_use = 0.0
+                if dRA is not None:
+                    if type(dRA) is list:
+                        dRA_use = dRA[i]
+                    else:
+                        dRA_use = dRA
+                elif 'dRA' in uv_keywords:
+                    dRA_use = uv['dRA']
+                else:
+                    dRA_use = 0.0
+                if dDec is not None:
+                    if type(dDec) is list:
+                        dDec_use = dDec[i]
+                    else:
+                        dDec_use = dDec
+                elif 'dDec' in uv_keywords:
+                    dDec_use = uv['dDec']
+                else:
+                    dDec_use = 0.0
 
                 # Find image for uv wavelength
                 try:
@@ -904,12 +974,19 @@ class radmc3dModel:
 
                 dxy = self.image[iim].sizepix_x / nc.au / dpc / 3600. * galario.deg
 
+                print ("Image: {} micron, PA: {}, dRA: {}, dDec: {}".format(wav, 
+                                                                            PA_use,
+                                                                            dRA_use,
+                                                                            dDec_use))
+
                 # Compute visibility
                 if chi2_only:
                     vis = np.zeros_like(u, dtype=np.complex)
                 else:
-                    vis = galario.double.sampleImage( imJyppix, dxy, u/wle, v/wle, 
-                                                      check=galario_check )
+                    vis = galario.double.sampleImage( imJyppix, dxy, u/wle, 
+                                                     v/wle, dRA=dRA_use, 
+                                                     dDec=dDec_use, PA=PA_use,
+                                                     check=galario_check)
 
                 # Store visibility (or 0 array)
                 self.vis_mod.append( uvplot.UVTable(uvtable=[u, v, vis.real,
@@ -921,8 +998,9 @@ class radmc3dModel:
 
                 # Compute chi2
                 chi2 = galario.double.chi2Image( imJyppix, dxy, u/wle, v/wle, 
-                                                 Re, Im, w, dRA=dRA, dDec=dDec, 
-                                                 PA=PA, check=galario_check )
+                                                 Re, Im, w, dRA=dRA_use, 
+                                                 dDec=dDec_use, PA=PA_use, 
+                                                 check=galario_check )
                 # Number of (u,v) pairs
                 nvis = u.shape[0]
 

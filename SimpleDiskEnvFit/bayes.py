@@ -48,10 +48,10 @@ def lnpriorfn(p, par_ranges):
     return jacob
 
 def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
-             dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0,
-             idisk=True, ienv=True, icav=False, impar=None, 
-             verbose=False, cleanModel=False, binary=False,
-             chi2_only=True, galario_check=False, time=False):
+             dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0, idisk=True, 
+             ienv=True, icav=False, islab=False, impar=None, verbose=False, 
+             cleanModel=False, binary=False, chi2_only=True, 
+             galario_check=False, time=False):
     """
     Log of posterior probability function.
     
@@ -94,6 +94,8 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
             Include envelope component in model. Default is True.
     icav  : bool
             Include envelope cavity in model. Default is False.
+    islab : bool
+            Include slab density distribution in model. Default is False.
     impar : dict or list of dict, optional
             Image parameter(s). Known keywords are listed in the runImage()
             method description. At least the wavelength (wav keyword) must 
@@ -127,10 +129,11 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     # Model ID
     rand = np.random.randint(0,99999)
 
-    lnprior = lnpriorfn(p, p_ranges)  # apply prior
+    # Apply prior
+    lnprior = lnpriorfn(p, p_ranges)
     if not np.isfinite(lnprior):
         if verbose:
-            print ("INFO: model rejected", p)
+            print ("INFO [{:06}]: model rejected ({})".format(rand,p))
         return -np.inf
 
     if len(p) != len(parname):
@@ -236,7 +239,7 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     mod = main.radmc3dModel(modpar=modpar, model_dir=model_dir, 
                             resource_dir=resource_dir, ID=rand,
                             binary=binary, idisk=idisk, ienv=ienv, 
-                            icav=icav)
+                            icav=icav, islab=islab)
     mod.write2folder()
 
     mod.runModel(impar=impar, mctherm=True, nphot_therm=100000, verbose=verbose,
@@ -266,10 +269,10 @@ def relative_chi2(mod):
     '''
     '''
     if mod.vis_inp is None:
-        print ('Warn: vis_inp not in radmc3dModel object!')
+        print ('WARN: vis_inp not in radmc3dModel object!')
         return np.nan
     if mod.vis_mod is None:
-        print ('Warn: vis_mod not in radmc3dModel object!')
+        print ('WARN: vis_mod not in radmc3dModel object!')
         return np.nan
     
     nvis = len(mod.nvis)

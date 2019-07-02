@@ -206,7 +206,8 @@ class emcee_chain():
         return
         
     def plot_chain(self, show=True, save=True, gamma=1.0, alpha_floor=0.1,
-                   figname='walkers.pdf'):
+                   xlim=None, ylim=None, xscale='linear', yscale='linear', 
+                   figname='walkers.pdf', **kwargs):
         '''
         Plots the path taken by walkers for each fitted parameters.
         
@@ -227,10 +228,24 @@ class emcee_chain():
         alpha_floor : float, optional
                 Lower limit on transparency value. This is used to make sure 
                 all models are visible on the figure. Default value is 0.1.
+        xlim    : array-like, optional 
+                Set x-axis plotting limits. Two element array like object is 
+                expected. Default is None.
+        ylim    : array-like, optional
+                Set y-axis plotting limits. Two element array like object is 
+                expected. Default is None.
+        xscale  : string, optional
+                Set the scaling of x axis. Recognised values: "linear", "log", 
+                "symlog", "logit". Default is "linear".
+        yscale  : string, optional
+                Set the scaling of y axis. Recognised values: "linear", "log", 
+                "symlog", "logit". Default is "linear".
         figname : string, optional
                 File name of walker path figure. Used if save argument is True.
                 If no file path is specified, then figure is saved to the current 
                 directory. Default is walkers.pdf.
+        **kwargs : Line2D properties, optional
+                Keyword argument will be passed to matplotlib.pyplot.plot().
         '''
         fig, ax = plt.subplots(self.ndim, 1, sharex=True, figsize=(6,3*self.ndim))
         
@@ -255,7 +270,17 @@ class emcee_chain():
                 chain_max = lnprob[w,:].max()
                 alpha = max([(10**(chain_max/scale) / 10**(lnprob_max/scale))**gamma, 
                             alpha_floor])
-                ax[p].plot(self.chain[w,:,p],'b-', linewidth=1, alpha=alpha)
+                ax[p].plot(self.chain[w,:,p],'b-', alpha=alpha, **kwargs)
+                # Plotting limits
+                if xlim:
+                    ax[p].set_xlim(xlim)
+                if ylim:
+                    ax[p].set_ylim(ylim)
+                # Axis scale
+                if xscale:
+                    ax[p].set_xscale(xscale)
+                if yscale:
+                    ax[p].set_yscale(yscale)
             
             # initial guess
             #ax[p].plot([0,nstep],[par[p],par[p]],'g-', linewidth=2)
@@ -270,7 +295,8 @@ class emcee_chain():
         return
 
     def plot_lnprob(self, show=True, save=True, gamma=1.0, alpha_floor=0.1,
-                    figname='posterior.pdf'):
+                    xlim=None, ylim=None, xscale='linear', yscale='linear',
+                    figname='posterior.pdf', **kwargs):
         '''
         Plots the posterior probability of models explored by walkers.
         
@@ -291,10 +317,24 @@ class emcee_chain():
         alpha_floor : float, optional
                 Lower limit on transparency value. This is used to make sure 
                 all models are visible on the figure. Default value is 0.1.
+        xlim    : array-like, optional 
+                Set x-axis plotting limits. Two element array like object is 
+                expected. Default is None.
+        ylim    : array-like, optional
+                Set y-axis plotting limits. Two element array like object is 
+                expected. Default is None.
+        xscale  : string, optional
+                Set the scaling of x axis. Recognised values: "linear", "log", 
+                "symlog", "logit". Default is "linear".
+        yscale  : string, optional
+                Set the scaling of y axis. Recognised values: "linear", "log", 
+                "symlog", "logit". Default is "linear".
         figname : string, optional
                 File name of corner plot figure. Used if save argument is True.
                 If no file path is specified, then figure is saved to the current 
                 directory. Default is posterior.pdf.
+        **kwargs : Line2D properties, optional
+                Keyword argument will be passed to matplotlib.pyplot.plot().
         '''
         if self.lnprob is None:
             raise ValueError('lnprob class variable is not set.')
@@ -312,10 +352,21 @@ class emcee_chain():
             chain_max = self.lnprob[w,:].max()
             alpha = max([(10**(chain_max/scale) / 10**(lnprob_max/scale))**gamma, 
                          alpha_floor])
-            ax.plot(self.lnprob[w,:],'-', linewidth=1, alpha=alpha)
+            ax.plot(self.lnprob[w,:],'-', alpha=alpha, **kwargs)
         ax.set_xlabel('step number')
         ax.set_ylabel('$ln$(P)')
         
+        # Plotting limits
+        if xlim:
+            ax.set_xlim(xlim)
+        if ylim:
+            ax.set_ylim(ylim)
+        # Axis scale
+        if xscale:
+            ax.set_xscale(xscale)
+        if yscale:
+            ax.set_yscale(yscale)
+                    
         if save:
             plt.savefig(figname)
 
@@ -358,6 +409,8 @@ class emcee_chain():
                 File name of corner plot figure. Used if save argument is True.
                 If no file path is specified, then figure is saved to the current 
                 directory. Default is corner.pdf.
+        **kwargs : keyword arguments, optional
+                Keyword argument will be passed to corner.corner().
         '''
         # Determine nsteps
         if nburnin < 0:

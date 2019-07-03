@@ -831,7 +831,7 @@ class radmc3dModel:
                 each image may use a different PA value, if a list is provided. 
                 The order used is the same as in the uvdata list. The PA value 
                 provided in uvdata will be overruled by the value provided as 
-                an argument in the function call. If PA is not set in visdata 
+                an argument in the function call. If PA is not set in uvdata 
                 and PA is None in the function call, then PA = 0.0 is used.
                 Default is None.
         dRA  :  float or list of floats, optional
@@ -839,7 +839,7 @@ class radmc3dModel:
                 each image may use a different dRA value, if a list is provided. 
                 The order used is the same as in the uvdata list. The dRA value 
                 provided in uvdata will be overruled by the value provided as 
-                an argument in the function call. If dRA is not set in visdata 
+                an argument in the function call. If dRA is not set in uvdata 
                 and dRA is None in the function call, then dRA = 0.0 is used.
                 Default is None.
         dDec :  float or list of floats, optional
@@ -847,7 +847,7 @@ class radmc3dModel:
                 each image may use a different PA value, if a list is provided. 
                 The order used is the same as in the uvdata list. The dDec value 
                 provided in uvdata will be overruled by the value provided as 
-                an argument in the function call. If dDec is not set in visdata 
+                an argument in the function call. If dDec is not set in uvdata 
                 and dDec is None in the function call, then dDec = 0.0 is used.
                 Default is None.
         chi2_only : bool
@@ -1189,7 +1189,6 @@ class radmc3dModel:
             pass
 
         return 0
-
 
 def getParams(paramfile=None):
     '''

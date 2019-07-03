@@ -17,10 +17,11 @@ from __future__ import print_function
 
 from . import main
 import radmc3dPy.natconst as nc
-from galario import deg, arcsec
 
 import numpy as np
 import os
+
+__all__ = ['lnpriorfn','lnpostfn','relative_chi2']
 
 def lnpriorfn(p, par_ranges):
     """
@@ -269,10 +270,10 @@ def relative_chi2(mod):
     '''
     '''
     if mod.vis_inp is None:
-        print ('WARN: vis_inp not in radmc3dModel object!')
+        warnings.warn('vis_inp not in radmc3dModel object!')
         return np.nan
     if mod.vis_mod is None:
-        print ('WARN: vis_mod not in radmc3dModel object!')
+        warnings.warn('vis_mod not in radmc3dModel object!')
         return np.nan
     
     nvis = len(mod.nvis)

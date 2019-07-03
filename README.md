@@ -3,14 +3,16 @@ SimpleDiskEnvFit
 
 Self-contained `radmc3dModel` with child-mode RADMC3D runner and with 
 image, visibility and $`\chi^2`$ storage.
-The user provides a `radmc3dPar` object and optional observed     
-constrains in the uv space. The code computes density structure, 
+The user provides a `radmc3dPar` object and complex visibility observational     
+constrains. The code computes density structure, 
 dust opacity and writes to disk. Then the runner computes dust 
 temperature and continuum images. The images are transformed to the 
-uv space and the $`\chi^2`$ is computed compared to the input observations.
+(u,v) space and the $`\chi^2`$ is computed compared to the input observations.
 
-Based on [SimpleDiskEnv](https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnv). 
-The code is intended to be used with the `emcee` MCMC sampler tool.
+The model parameters are optimised using the `emcee` MCMC sampler tool. The final 
+results include the posterior probability distribution of the fitted parameters 
+and the walked chains in terms of $`\chi^2`$ and parameter combination.
+Best fit model visibilities may be plotted with the observation data.
 
 Features and options:
 --------------------
@@ -58,11 +60,10 @@ Use Python's distutil utility and the provided setup.py script.
 $ python setup.py install --user
 ```
 
-On linux this 
-installes the module to ~/.local/lib/python{2.7/3.6}/site-packages directory, 
+On Linux this installs the module to ~/.local/lib/python{2.7/3.6}/site-packages directory, 
 which is usually included in the python search path.
 
-Alternatively, you may directly add the repository location to your PYTHONPATH:
+Alternatively, you may directly add the repository location to your `PYTHONPATH`:
 
 ```bash
 $ export PYTHONPATH=$PYTHONPATH:/path/to/your/SimpleDiskEnvFit/directory
@@ -149,11 +150,20 @@ Contents of the `examples/elias29` folder:
     Elias29uvt_94.txt               Observed complex visibility at 3.0 mm wavelength
 
 
-The `fit_elias29.py` file contains the `run_mcmc()` function, which is tailord 
-for fitting the Elias 29 data and the `plot_corner()` function for plotting the 
-result posterior probability density distribution. The routines may be imported 
-in interactive Python shell or run as a script. In the later case, the fitting 
-parameters (nwalkers, nthreads, nsteps, use_mpi, etc.) should be set in the .
+The `examples/fit_elias29.py` script is tailored for fitting the complex visibility 
+data of Elias29. The script prepares the complex visibility data (`visdata`) and 
+sets the control parameters for the fitting (`kwargs`). The parameters are passed 
+to the `SimlpeDiskEnvFit.run_mcmc()` function. At least the `main_dir`, `uvdata`, 
+`paramfile`, `parname`, `p_ranges` and `p0` arguments need to be set. Note that 
+the `kwargs` dictionary contains further important parameters (e.g. `dpc`, `incl`).
+If `kwargs` is not set, then default values are used. Please consult the function 
+documentation for the detailed description of the arguments.
+
+The chain itself is controlled by setting the `nwalkers` and  `nsteps` arguments 
+to the `run_mcmc()` function call. The number of threads used may be set by the 
+`nthreads` arguments. In MPI mode, the `use_mpi` must be True. In this case the 
+`nthreads` is ignored and as many cores will be used as the MPI provides to the 
+code.
 
 The `elias29_slurm.sh` provides an example for configuring and running the script 
 on a cluster (CCAS at MPCDF) with SLURM scheduling system.
@@ -161,6 +171,9 @@ on a cluster (CCAS at MPCDF) with SLURM scheduling system.
 To run the script in MPI mode use one of the following commands:
 
 ```bash
+# Without MPI, running locally
+python fit_elias29.py
+
 # Without scheduling system, using 8 threads
 mpirun -n 8 python fit_elias29.py 
 
@@ -168,18 +181,17 @@ mpirun -n 8 python fit_elias29.py
 sbatch elias29_slurm.sh
 ```
 
-Make sure that the call to `run_mcmc()` has use_mpi=True and that in the elias29_slurm.sh 
-script the partition, ntasks-per-node, nodes parameters are set correctly and 
-that the srun -n argument reflects the choice of the above parameters.
+Make sure that the call to `run_mcmc()` has `use_mpi = True` and that in the elias29_slurm.sh 
+script the partition, ntasks-per-node and node parameters are set correctly.
 
 The result chain is written to `examples/elias29/elias29_mcmc_save.p` python 
-pickle format fime. A plotting routine (`plot_corner`) is provided to visualise 
-the results in a corner plot.
+pickle format and `examples/elias29/chain.dat` ASCII files. The `SimpleDiskEnvFit.tools` 
+module provides functions for reading and visualizing the output (see Wiki).
 
 ### Resuming MCMC computation
 
 The example script saves the parameter and posterior probability after each 
-step to `examples/elias29/chain_0.dat` file. This file can be used to restart unfinished or 
+step to `examples/elias29/chain.dat` file. This file can be used to restart unfinished or 
 interupted computations. 
 *Important*: the same number of walkers must be used in subsequent runs.
 
@@ -198,7 +210,8 @@ the new MCMC run from the last saved state of the `emcee` sampler. The chain
 will continue with 1000 steps (i.e. 1000 times 40 models) and write the results 
 from the current run to `examples/elias29/chain_0.dat`. The results in the 
 `elias29_mcmc_save.p` pickle file will contain the chain from both the 
-first and the rerun.
+first and the rerun. It is possible to read and merge multiple ASCII chain files 
+using the `SimpleDiskEnvFit.tools.emcee_chain` class.
 
 **General notes**
 

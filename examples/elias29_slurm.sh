@@ -17,9 +17,6 @@
 date
 
 ## Load required software
-module load intel
-module load mkl
-module load fftw
 module load impi
 module load anaconda
 
@@ -29,9 +26,9 @@ export PYTHONPATH=$PYTHONPATH:~/.local/lib/python2.7/site-packages
 export PATH=$PATH:~/bin
 
 # Change to model directory, this is used as resource_dir in SimpleDiskEnvFit
-cd ~/elias29
-pwd
+export RUN_HOME=$(pwd)
+cd $RUN_HOME
 
 echo "Starting thread:" $SLURM_ARRAY_TASK_ID
 
-srun -n 80 python fit_elias29.py
+srun python fit_elias29.py

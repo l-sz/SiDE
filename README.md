@@ -3,7 +3,7 @@ SimpleDiskEnvFit
 
 Self-contained `radmc3dModel` with child-mode RADMC3D runner and with 
 image, visibility and $`\chi^2`$ storage.
-The user provides a `radmc3dPar` object and complex visibility observational     
+The user provides a `radmc3dPar` object and complex visibility observational 
 constrains. The code computes density structure, 
 dust opacity and writes to disk. Then the runner computes dust 
 temperature and continuum images. The images are transformed to the 

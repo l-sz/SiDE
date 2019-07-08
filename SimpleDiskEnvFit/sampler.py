@@ -27,6 +27,7 @@ import radmc3dPy.natconst as nc
 
 from . import bayes
 from . import main
+from . import tools
 
 __all__ = ['run_mcmc']
 
@@ -87,7 +88,6 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
         pool = MPIPool()
         if not pool.is_master():
             os.chdir(main_dir)
-            print ('MPIPOOL: waiting for task')
             pool.wait()
             sys.exit(0)
     else:

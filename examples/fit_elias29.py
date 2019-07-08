@@ -25,7 +25,8 @@ if __name__ == "__main__":
     # Bundle visibility data
     # Note: PA, dRA and dDec may be overwritten by values provided in kwargs.
     visdata = [{'u':u1[use1], 'v':v1[use1], 'Re':Re1[use1], 'Im':Im1[use1], 
-                'w':w1[use1], 'wav':1100., 'PA':0.0, 'dRA':0.0, 'dDec': 0.0},
+                'w':w1[use1], 'wav':1100., 'PA':0.0, 'dRA':0.48*arcsec,
+                'dDec':0.98*arcsec},
             {'u':u2[use2], 'v':v2[use2], 'Re':Re2[use2], 'Im':Im2[use2], 
                 'w':w2[use2], 'wav':3000., 'PA':0.0, 'dRA':0.0, 'dDec': 0.0}]
 
@@ -37,8 +38,7 @@ if __name__ == "__main__":
     impar = [{'npix':512,'wav':[1100.,3000.],'sizeau':11000,'incl':67.}]
 
     # Set parameters for bayes.lnpostfn() function
-    kwargs = {'dpc': 125., 'incl': 67., 'verbose': True, 
-            'PA':0.0, 'dRA':0.48*arcsec, 'dDec':0.98*arcsec,
+    kwargs = {'dpc': 125., 'incl': 67., 'impar': impar, 'verbose': True, 
             'idisk':True, 'ienv':True, 'icav':False,
             'cleanModel': True, 'binary': True, 'chi2_only':True, 
             'galario_check':False, 'time':True }
@@ -70,9 +70,9 @@ if __name__ == "__main__":
         
     # Resume example
     #
-    #results = run_mcmc(current_dir+'/elias29', visdata, nsteps=300, nburnin=0, 
-                       #use_mpi=True, resume=True, verbose=True,
-                       #restart_file=current_dir+'/elias29/chain_0.dat',
+    #results = run_mcmc(current_dir+'/elias29', visdata, paramfile='elias29_params.inp',
+                       #nsteps=300, nburnin=0, use_mpi=True, resume=True, verbose=True,
+                       #restart_file=current_dir+'/elias29/chain.dat',
                        #impar=impar, parname=parname, p_ranges=p_ranges, p0=p0, 
                        #kwargs=kwargs)
     

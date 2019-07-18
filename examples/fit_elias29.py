@@ -66,6 +66,7 @@ if __name__ == "__main__":
     current_dir = os.path.realpath('.')
     results = run_mcmc(current_dir+'/elias29', visdata, paramfile='elias29_params.inp',
                        use_mpi=True, verbose=True, impar=impar, parname=parname, 
+                       nwalkers=100, nsteps=300, nburnin=0,
                        p_ranges=p_ranges, p0=p0, kwargs=kwargs)
         
     # Resume example

@@ -25,9 +25,10 @@ from . import ulrich_envelope as uenv
 
 def ulrich_envelope(grid, ppar, cavity=False):
     '''
-    Returns density distribution ([nx, ny, nz, 1] dimension) of a rotationally 
+    Returns dust density distribution ([nx, ny, nz, 1] dimension) of a rotationally 
     flattened protostellar envelope. The profile is given by Ulrich (1976).
-    The model parameters should be provided in ppar.
+    The model parameters should be provided in ppar.  Unit of the returned array 
+    is [gram/cm^3] of dust.
     
     Parameters
     ----------
@@ -46,10 +47,8 @@ def ulrich_envelope(grid, ppar, cavity=False):
     # Envelope density array
     rho_env = np.zeros([grid.nx, grid.ny, grid.nz,1], dtype=np.float64)
 
-    dummy = uenv.ulrich_envelope(rr, th, rho0=ppar['rho0Env'] / 
-                                            ppar['dusttogas'], 
-                                            rmin=ppar['rTrunEnv'], 
-                                            Rc=ppar['r0Env'])
+    dummy = uenv.ulrich_envelope(rr, th, rho0=ppar['rho0Env'], 
+                                 rmin=ppar['rTrunEnv'], Rc=ppar['r0Env'])
     
     rho_env[:,:,0,0] = dummy
     
@@ -64,9 +63,9 @@ def ulrich_envelope(grid, ppar, cavity=False):
 
 def tafalla_envelope(grid, ppar, cavity=False):
     '''
-    Returns protostellar envelope density distribution ([nx, ny, nz, 1] 
+    Returns protostellar envelope dust density distribution ([nx, ny, nz, 1] 
     dimension) according Tafalla et al. (2004). The model parameters should be
-    provided in ppar.
+    provided in ppar. Unit of the returned array is [gram/cm^3] of dust.
     
     Parameters
     ----------
@@ -104,9 +103,9 @@ def tafalla_envelope(grid, ppar, cavity=False):
 
 def powerlaw_envelope(grid, ppar, cavity=False):
     '''
-    Returns power law protostellar envelope density distribution 
+    Returns power law protostellar envelope dust density distribution 
     ([nx, ny, nz, 1] dimension). The model parameters should be provided in 
-    ppar.
+    ppar. Unit of the returned array is [gram/cm^3] of dust.
     
     Parameters
     ----------
@@ -176,8 +175,8 @@ def envelope_cavity(rho, grid, ppar, modeCav=None):
     # Find cavity opening angle in parameter list
     if 'thetac_deg' in ppar.keys():
         theta_cav_deg = ppar['thetac_deg']
-    elif 'tetDegCav' in ppar.keys():
-        theta_cav_deg = ppar['tetDegCav']
+    elif 'thetDegCav' in ppar.keys():
+        theta_cav_deg = ppar['thetDegCav']
     else:
         raise ValueError('ERROR [envelope_cavity]: Cavity opening angle not given')
     
@@ -212,7 +211,7 @@ def slab(grid, r0=0.0, r1=0.0, H0=0.0, H1=0.0, rho0=0.0, sig0=None, smoothed=Tru
     The user must consider the gas-to-dust ratio manually.
     
     Due to the grid and plausibility issues, the function returns a zero density 
-    array by default.
+    array by default. Unit of the returned array is [gram/cm^3] of dust.
     
     Use this function with care!
     
@@ -312,8 +311,8 @@ def slab_wrapper(grid, ppar):
          is not set, then sig0 = m_slab / A_d, where A_d is the disk surface 
          area.
     rho0 : float
-         Constant density of the slab. Set by rho0_slab parameter. If it is not 
-         set, then rho0 = 0.0. Note that if sig0_slab and rho0_slab are both 
+         Constant dust density of the slab. Set by rho0_slab parameter. If it is 
+         not set, then rho0 = 0.0. Note that if sig0_slab and rho0_slab are both 
          set, then sig0_slab is used.
     '''
     params = ppar.keys()
@@ -375,14 +374,16 @@ def slab_wrapper(grid, ppar):
     
 def flaring_disk(grid, ppar):
     '''
-    Returns flaring disk density distribution. The distribution is described by 
-    the following equations:
+    Returns flaring disk dust density distribution. The distribution is described 
+    by the following equations:
     
        hp(r) = hr0 * (r/r0)**plh * r
        
        sigma(r) = sigma0 * (r/r0)**plsig
        
        rho(r,z) = sigma(r) / (hp(r) * sqrt(2*pi) * exp(-0.5 * z**2/hp**2)
+    
+    Unit of the returned array is [gram/cm^3] of dust.
     
     Parameters
     ----------
@@ -474,13 +475,13 @@ def flaring_disk(grid, ppar):
         surf_area[ix] = np.pi * (grid.xi[ix+1]**2 - grid.xi[ix]**2)
     sig_rsig = np.interp(rsig,grid.x,surf_mass/surf_area)
 
-    rhodust = np.array(rho_disk) * ppar['dusttogas']
+    rhodust = np.array(rho_disk)
 
     return (rhodust, mass, sig_rsig)
 
 def computeEnvMass(grid, rho_env):
     '''
-    Compute envelope total mass and mass within 3000 au.
+    Compute envelope total dust mass and dust mass within 3000 au.
     
     Parameters
     ----------

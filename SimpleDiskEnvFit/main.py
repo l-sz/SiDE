@@ -373,8 +373,7 @@ class radmc3dModel:
             ngpop = ppar['ngpop']
         else:
             ngpop = 1
-            print ("WARN [{:06}]: ngpop not defined in parameter file, \
-                    using {:2} dust species".format(self.ID, ngpop))
+            print ("WARN [{:06}]: ngpop not defined in parameter file, using {:2} dust species".format(self.ID, ngpop))
         
         if ngpop == 2 and ppar['idisk'] and ppar['ienv']:
             rhodust = np.zeros([self.grid.nx, self.grid.ny, self.grid.nz, ngpop])
@@ -578,7 +577,7 @@ class radmc3dModel:
         print("\nEnvelope parameters:\n")
         if ppar["ienv"] == True:
             print(" {:s} envelope is included!".format(ppar['modeEnv']))
-            print(" Density at {:.2f} AU = {:.2E} g/cm^3".format(ppar['r0Env'] 
+            print(" Dust density at {:.2f} AU = {:.2E} g/cm^3".format(ppar['r0Env'] 
                                                                  / nc.au, 
                                                                  ppar['rho0Env']))
             if  (ppar['modeEnv'] != 'Ulrich1976'):
@@ -589,11 +588,15 @@ class radmc3dModel:
             if ppar['icav'] == True:
                 print("\n Model contains cavity with parameters:")
                 print(" Cavity mode: {:s}".format(ppar['modeCav']))
-                print(" Opening angle = {:.2f} deg".format(ppar['thetDegCav']))
+                if 'thetac_deg' in ppar.keys():
+                    thetDegCav = ppar['thetac_deg']
+                elif 'thetDegCav' in ppar.keys():
+                    thetDegCav = ppar['thetDegCav']
+                print(" Opening angle = {:.2f} deg".format(thetDegCav))
                 print(" Density reduction factor = {:.2E}".format(ppar['redFactCav']))
                 
-            print("\n Menv (<3000 au) = {:.2E} Msol".format(self.menv3000/nc.ms))
-            print(" Menv (final) = {:.2E} Msol".format(self.menv/nc.ms))
+            print("\n Menv (dust, <3000 au) = {:.2E} Msol".format(self.menv3000/nc.ms))
+            print(" Menv (dust, final) = {:.2E} Msol".format(self.menv/nc.ms))
       
         else:
             print(" *NO* envelope is included!")
@@ -603,11 +606,11 @@ class radmc3dModel:
         if ppar["idisk"] == True:
             print(" Disk is included in the model!")
             if ('mdisk' in ppar.keys()): 
-                print("Mdisk (dust+gas) = {:.2E} Msol".format(ppar['mdisk'] / nc.ms))
+                print("Mdisk (dust) = {:.2E} Msol".format(ppar['mdisk'] / nc.ms))
             else:
                 print(" Mdisk is not set, using Sig(0)")
                 if ('sig0' in ppar.keys()): 
-                    print(" Sig0(Rsig) = {:.2E} g/cm^2".format(ppar['sig0']))
+                    print(" Sig0(dust,Rsig) = {:.2E} g/cm^2".format(ppar['sig0']))
                 else:
                     raise ValueError("Keyword sig0 is not set!")
                 if ('rsig' in ppar.keys()): 
@@ -620,11 +623,11 @@ class radmc3dModel:
             print(" Hr(Hrpivot) = {:.2E}".format(ppar['hrdisk']))
             print(" Power law of H = {:.2f}".format(ppar['plh']))
             print(" Power law of surface density = {:.2f}".format(ppar['plsig1']))
-            print(" Dust-to-gas = {:.2E}".format(ppar['dusttogas']))
+            print(" Dust-to-gas = {:.2E} (not used)".format(ppar['dusttogas']))
         
             # Print the final mass and the sig0
-            print(" Mdisk (final) = {:.2E} Msol".format(self.mdisk/nc.ms))
-            print(" Sig0(rsig) (final) = {:.2E} g/cm^2".format(self.sig0))
+            print(" Mdisk (dust, final) = {:.2E} Msol".format(self.mdisk/nc.ms))
+            print(" Sig0(rsig) (dust, final) = {:.2E} g/cm^2".format(self.sig0))
         else:
             print(" *NO* disk is included!")
         

@@ -50,8 +50,8 @@ if __name__ == "__main__":
 
     # Choose fitting parameters and initial values
     parname = ['mdisk','rho0Env','gsmax_disk','gsmax_env']
-    p_ranges = [[-10., -2.],    # log disk mass [solar mass]
-               [-23., -19.],   # log envelope density [g/cm**3]
+    p_ranges = [[-10., -2.],   # log disk dust mass [solar mass]
+               [-23., -19.],   # log envelope dust density [g/cm**3]
                [-6., 0.],      # log disk grain size [cm]
                [-6., 0.]]      # log envelope grain size [cm]
 
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     results = run_mcmc(current_dir+'/elias29', visdata, paramfile='elias29_params.inp',
                        use_mpi=True, verbose=True, impar=impar, parname=parname, 
                        p_ranges=p_ranges, p0=p0, kwargs=kwargs)
-        
+    
     # Resume example
     #
     #results = run_mcmc(current_dir+'/elias29', visdata, paramfile='elias29_params.inp',
@@ -75,5 +75,7 @@ if __name__ == "__main__":
                        #restart_file=current_dir+'/elias29/chain.dat',
                        #impar=impar, parname=parname, p_ranges=p_ranges, p0=p0, 
                        #kwargs=kwargs)
+    
+    print ("Note that mass and density parameters always refer to the dust component!")
     
     print ("All Done!")

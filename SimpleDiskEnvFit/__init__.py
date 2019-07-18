@@ -16,7 +16,7 @@ from . import tools
 
 
 
-__version__ = "0.1"
+__version__ = "0.1.1"
 __author__ = "Laszlo Szucs (laszlo.szucs@mpe.mpg.de)"
 
 __all__ =  ["radmc3dModel","getParams","radmc3dRunner","bayes","tools", 

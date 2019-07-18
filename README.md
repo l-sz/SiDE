@@ -88,9 +88,9 @@ import numpy as np
 
 par = SimpleDiskEnvFit.getParam()
 
-par.setPar(['mdisk', '0.01*ms', ' Disk mass', 'Disk parameters'])
+par.setPar(['mdisk', '0.01*ms', ' Disk dust mass', 'Disk parameters'])
 par.setPar(['rdisk', '100.*au', ' Disk radius', 'Disk parameters'])
-par.setPar(['rho0Env', '1e-20', ' Envelope reference density [g/cm^3]', 'Envelope parameters'])
+par.setPar(['rho0Env', '1e-20', ' Envelope reference dust density [g/cm^3]', 'Envelope parameters'])
 ```
 
 Create the `radmc3dModel` object and print model information (included components, 
@@ -222,6 +222,7 @@ SimpleDiskEnvFit is distributed with the astronomical silicate dust model of
 Draine & Lee (2003) and the porous silicate:carbon:ice:vacuum (1:2:3:6) dust 
 model used in Natta & Testi (2004). 
 
+Note that mass and density related parameters always refer to the dust component!
 
 
 Acknowledgement:

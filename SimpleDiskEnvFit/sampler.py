@@ -32,9 +32,10 @@ from . import tools
 __all__ = ['run_mcmc']
 
 def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8, 
-             nwalkers=40, nsteps=1000, nburnin=100, use_mpi=False, verbose=False, 
-             resume=False, chain_file='chain.dat', restart_file='chain.dat', 
-             impar=None, parname=None, p_ranges=None, p0=None, kwargs=None):
+             nwalkers=40, nsteps=300, nburnin=100, use_mpi=False, verbose=False, 
+             resume=False, sloppy=False, chain_file='chain.dat', 
+             restart_file='chain.dat', impar=None, parname=None, p_ranges=None, 
+             p0=None, kwargs=None):
     '''
     Computes posteriori probabilities of parametrised Class 0/I models given 
     a set of observational constraints using SimpleDiskEnvFit.
@@ -50,39 +51,42 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
     Parameters
     ----------
     main_dir : string
-            Directory containing input and output files
+             Directory containing input and output files
     nthreads : int
-            Number of threads used in multiprocessing mode. This is ignored 
-            in MPI mode. Default is 8.
+             Number of threads used in multiprocessing mode. This is ignored 
+             in MPI mode. Default is 8.
     nwalkers : int
-            Number of walkers used. Default is 20.
-    nsteps  : int
-            Number of walker steps in the main run. Default is 300.
-    nburnin : int, optional
-            Number of walker steps in initial "burn-in" run. Default is 100.
-    plot    : bool, optional
-            Plot the posterior likelihood distributions. Default is True.
-    use_mpi : bool, optional
-            Use MPI pools instead of python threads. Useful for running 
-            on computer clusters using multiple nodes. Default is False.
-    resume  : bool, optional
-            If True then resume MCMC chain from file and continue sampling 
-            the posterior distribution. nwalkers should not change between 
-            runs. Default is False.
+             Number of walkers used. Default is 40.
+    nsteps   : int
+             Number of walker steps in the main run. Default is 300.
+    nburnin  : int
+             Number of walker steps in initial "burn-in" run. Default is 100.
+    use_mpi  : bool
+             Use MPI pools instead of python threads. Useful for running 
+             on computer clusters using multiple nodes. Default is False.
+    resume   : bool
+             If True then resume MCMC chain from file and continue sampling 
+             the posterior distribution. nwalkers should not change between 
+             runs. Default is False.
+    sloppy   : bool
+             If True then RADMC-3D relaxed the sub-pixel refinement criterion 
+             when raytracing. This may reduce runtime. Please don not forget to 
+             check best fit models with higher accuracy before publishing results.
+             Default is False.
     chain_file : string, optional
-            Chain (parameters and probabilities) are stored in this file. 
-            The file can be used to restart or continue MCMC sampling.
-            Meaning of columns: walker index (1), parameter value (n), 
-            log probability (1).
-            If file already exists then output is automatically renamed, 
-            this is done in order not to overwrite previous results and 
-            the restart_file (see below).
-            Default is "chain.dat".
+             Chain (parameters and probabilities) are stored in this file. 
+             The file can be used to restart or continue MCMC sampling.
+             Meaning of columns: walker index (1), parameter value (n), 
+             log probability (1).
+             If file already exists then output is automatically renamed, 
+             this is done in order not to overwrite previous results and 
+             the restart_file (see below).
+             Default is "chain.dat".
     restart_file: string, optional
-            When restarting (resume = True), then results from previous 
-            run are read from restart_file. If resume parameter is set 
-            True, then file must exist.
-            Default is "chain.dat".
+             When restarting (resume = True), then results from previous 
+             run are read from restart_file. If resume parameter is set 
+             True, then file must exist.
+             Default is "chain.dat".
     '''
     if use_mpi:
         pool = MPIPool()
@@ -153,11 +157,13 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
                                                          dset['v']/wav_m)
             dpix_au = dpix_ / galario.arcsec * kwargs['dpc'] 
             sizeau_ = npix_ * dpix_au
-            print (npix_, dpix_, dpix_au)
+
             impar.append({'npix':npix_, 'wav':wav_, 'sizeau':sizeau_, 
                           'incl':kwargs['incl']})
-            print ('''INFO [{:06}]: visibility dataset found: npix = {}, 
-                   sizeau = {:.2f}, wav = {:.2f}'''.format(0,npix_,sizeau_,wav_))
+            print ('''INFO [{:06}]: visibility dataset found: npix = {}, sizeau = {:.2f}, wav = {:.2f}'''.format(0,npix_,sizeau_,wav_))
+
+    # Set sloppynes
+    for ip in impar: ip['sloppy'] = sloppy
 
     # Update kwargs keys if needed
     kwargs['verbose'] = verbose

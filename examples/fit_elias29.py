@@ -23,7 +23,10 @@ if __name__ == "__main__":
     use2 = np.where(np.hypot(u2,v2)/(3.3e-3) <= 5.0e4)   # Select only data below 50 klambda
 
     # Bundle visibility data
-    # Note: PA, dRA and dDec may be overwritten by values provided in kwargs.
+    #
+    # Note: PA, dRA and dDec is overwritten by values (if any) provided in kwargs.
+    #       If PA, dRA and dDec are fitted, then values specified here are also 
+    #       overwritten.
     visdata = [{'u':u1[use1], 'v':v1[use1], 'Re':Re1[use1], 'Im':Im1[use1], 
                 'w':w1[use1], 'wav':1100., 'PA':0.0, 'dRA':0.48*arcsec,
                 'dDec':0.98*arcsec},
@@ -35,9 +38,14 @@ if __name__ == "__main__":
     #
 
     # Set image parameters
-    impar = [{'npix':512,'wav':[1100.,3000.],'sizeau':11000,'incl':67.}]
+    #
+    # Important: set position angle in the visdata dictionary
+    impar = [{'npix':512,'wav':[1100.,3000.],'sizeau':11000}]
 
     # Set parameters for bayes.lnpostfn() function
+    #
+    # Important: if the inclination is not a fitted parameter then it should be 
+    # defined in kwargs.
     kwargs = {'dpc': 125., 'incl': 67., 'impar': impar, 'verbose': True, 
             'idisk':True, 'ienv':True, 'icav':False,
             'cleanModel': True, 'binary': True, 'chi2_only':True, 

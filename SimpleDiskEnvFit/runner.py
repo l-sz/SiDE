@@ -176,42 +176,71 @@ class radmc3dRunner:
 
         return 0
 
-    def runImage(self, npix=None, incl=None, wav=None, sizeau=None, phi=None,      
-                posang=None, pointau=None, fluxcons=True, nostar=False,
-                noscat=False, lambdarange=None, nlam=None, stokes=False, **arg):
+    def runImage(self, npix=None, incl=None, phi=None, posang=None, wav=None, 
+                 lambdarange=None, nlam=None, sizeau=None,  pointau=None, 
+                 fluxcons=True, nostar=False, noscat=False, stokes=False, 
+                 sloppy=False, **arg):
         '''
         Send instructions to RADMC3D child process to compute image.
         
         Based on the radmc3dPy.image.makeImage() function and the parameters 
         have the same meaning.
         
+        Note that when used together with getVis() function, then a non-zero 
+        position angle should be set either in runImage() or in getVis(), the 
+        preferably set it in getVis().
+        
         Parameters
         ----------
-        npix :  int, optional
-                Pixel number (same along x and y).
-        incl :  float, optional
-                Model inclination.
-        wav :   float
-                Frequency where image is computed. Minimally wav must be set.
-        sizeau : float or None(optional)
-                Image size in physical scale, in unit of AU
-        phi :   float, optional
-                
-        posang : float, optional
-        pointau : float, optional
-        fluxcons : bool (default True)
-                If True, then ensure flux conversion (see RADMC3D manual).
-        nostar : bool (default False)
-                If True, then do not include stellar radiation in image.
-        noscat : bool (default False)
-                If True, then omit scattering, even if scattering data is given 
-                in opacity input file.
+        npix    : int, optional
+                  Pixel number (same along x and y).
+        incl    : float, optional
+                  Inclination of the object on the sky of the observer. incl=0
+                  means a view from the north pole downward, incl=90 means an 
+                  edge-on view.
+        phi     : float, optional
+                  The rotation of the object along its z-axis. Positive phi means
+                  that the object rotates counter-clockwise. This is useful for 
+                  asymmetric (3D) models.
+        posang  : float, optional
+                  The position angle of the camera in degrees. The camera is 
+                  rotated around the (0,0) point by this angle. If the image is 
+                  post-processed with galario (e.g. to compute chi^2), then the 
+                  projection should be done only once: set posang = 0.0 in 
+                  runImage() and set PA to the desired value in getVis() function.
+        wav     : float
+                  Frequency where image is computed. Minimally wav must be set.
         lambdarange : ndarray or None
-                If set then compute multiple images at wavelengths given by 
-                lambdarange.
-        nlam :  int or None
-                
-        stokes : bool (default False)
+                  If set then compute multiple images at wavelengths given by 
+                  lambdarange.
+        nlam    : int or None
+                  Number of wavelength points within lambdarange that will be 
+                  computed at once.
+        sizeau  : float or None(optional)
+                  Image size in physical scale, in unit of AU
+        pointau : array-like float, optional
+                  Defines the position and direction of camera in Cartesian space.
+                  The coordinates are given in au unit.
+        fluxcons: bool (default True)
+                  If True, then ensure flux conversion (see RADMC3D manual).
+        nostar  : bool (default False)
+                  If True, then do not include stellar radiation in image.
+        noscat  : bool (default False)
+                  If True, then omit scattering, even if scattering data is given 
+                  in opacity input file.
+        stokes  : bool (default False)
+                  If polarization information is given in the dust opacity file, 
+                  then setting this True will include the Stokes parameters to
+                  the computed images. 
+        sloppy  : bool (default False)
+                  If True then subpixel refinement criterion are relaxed when 
+                  raytracing. This is equivivalent with the sloppy command line 
+                  parameter in RADMC-3D and sets camera_min_dangle, camera_min_drr 
+                  and camera_spher_cavity_relres to 0.1. This may speed up image 
+                  raytracing if the image resolution is relatively small. If 
+                  the resolution is high (e.g. ALMA resolution), then subpixel 
+                  refinement is not necessary and the option will not lead to 
+                  speed up.
                 
         **arg : further arguments are not used
         '''
@@ -268,7 +297,9 @@ class radmc3dRunner:
         if noscat:
             self.proc.stdin.write(b"noscat\n")
         if stokes:
-            self.proc.stdin.write(b"stokes\n")        
+            self.proc.stdin.write(b"stokes\n")
+        if sloppy:
+            self.proc.stdin.write(b"sloppy\n")
         
         self.proc.stdin.write(b"enter\n")
         self.proc.stdin.flush()

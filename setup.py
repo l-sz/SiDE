@@ -10,7 +10,7 @@ except ImportError:
    print ('WARN: galario must be installed manually: https://github.com/mtazzari/galario')
 
 setup(name='SimpleDiskEnvFit',
-      version='0.1',
+      version='0.1.1',
       install_requires=['radmc3dPy >= 0.30.2', 'corner >= 2.0.0', 'emcee == 2.2.1',
 			'uvplot >= 0.2.8'],
       extras_require={'galario':['galario']},

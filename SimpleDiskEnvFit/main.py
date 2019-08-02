@@ -765,7 +765,7 @@ class radmc3dModel:
         
         # Initialize radmc3dRunner
         self.rrun = runner.radmc3dRunner(model_dir=self.model_dir, bufsize=500000,
-                                         nthreads=1, radmc3dexec=None, 
+                                         nthreads=nthreads, radmc3dexec=None, 
                                          ID=self.ID, verbose=verbose)
         
         # Compute dust temperature
@@ -1046,8 +1046,8 @@ class radmc3dModel:
         Compute dust opacity on the fly according to parameters defined in the 
         self.modpar object.
 
-        The code search the lnk file in the current folder first. If not found then
-        it looks for it in the resource_dir folder.
+        The code search the lnk file in the current folder first. If not found 
+        then it looks for it in the resource_dir folder.
 
         Currently single grain size is supported and the code requires the 
         Fortran implementation of the Mie scattering code in radmc3dPy.
@@ -1182,7 +1182,7 @@ class radmc3dModel:
                 self.opac.phase_g.append( gsca )
                 self.opac.idust.append( i )
 
-                self.opac.ext.append("amin_{:06.3E}_amax_{:06.3E}_pl{:04.2}".format(amin,amax,pla))
+                self.opac.ext.append("{:.5s}_amin_{:06.3E}_amax_{:06.3E}_pl{:04.2}".format(lnk,amin,amax,pla))
 
             # Save computed opacities
             self.opac_files = self.opac.ext

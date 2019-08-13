@@ -17,6 +17,7 @@ from __future__ import print_function
 
 import os
 import sys
+import gc
 import pickle
 import numpy as np
 
@@ -32,26 +33,47 @@ from . import tools
 __all__ = ['run_mcmc']
 
 def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8, 
-             nwalkers=40, nsteps=300, nburnin=100, use_mpi=False, verbose=False, 
+             nwalkers=40, nsteps=300, nburnin=0, use_mpi=False, verbose=False, 
              resume=False, sloppy=False, chain_file='chain.dat', 
              restart_file='chain.dat', impar=None, parname=None, p_ranges=None, 
-             p0=None, kwargs=None):
+             p0=None, debug=False, kwargs=None, dpc=1.0, incl=60.):
     '''
     Computes posteriori probabilities of parametrised Class 0/I models given 
-    a set of observational constraints using SimpleDiskEnvFit.
+    a set of observational constraints and radiative transfer model parameters.
 
-    The observational constraints and parameter ranges are hard-coded in the 
-    function. The code assumes that elias29_params.inp, Elias29uvt_270.txt 
-    and Elias29uvt_94.txt are in the folder where the function is executed.
+    The observational constraints (visibility data) must be provided in the 
+    uvdata argument. The radiative transfer model parameters must be provided 
+    in the paramfile. The fitted parameters (specified in parname argument) 
+    will be changed during the MCMC procedure. The initial values of the fitted 
+    parameters are provided in the p0 argument. All other model parameters are 
+    as set in the paramfile.
+    
+    In version 0.1.1 only uniform prior is possible (1 within the parameter range,
+    0 outside of the range). The ranges of the uniform prior are given in the 
+    p_ranges argument.
 
-    The function save the MCMC chains, parameter ranges, constraints and 
-    metadata to a binary pickle file (elias29_mcmc_save.p) and displays the 
-    posterior likelihood distribution in a "corner plot" (elias29_mcmc.pdf).
+    The MCMC chains are saved in a Python readable pickle file (chain.p) and 
+    in an ASCII file (chain.dat). The pickle file contains additional information 
+    (e.g. uniform prior ranges, observational constraints, metadata), but it is 
+    only written at the successful finish of the MCMC run. The ASCII output 
+    saves only the current parameters of the chains and the model likelihood, 
+    but it is updated after each MCMC step. This file can be used to restart 
+    runs that ended before completion (e.g. because the allocated time run out 
+    on the cluster).
+    
+    The resulting chain and metadata is also returned as a dictionary.
 
     Parameters
     ----------
     main_dir : string
-             Directory containing input and output files
+             Directory containing input and output files.
+    uvdata   : dictionary or list of dictionaries
+             Input observed visibility data at a single or multiple wavelengths.
+             The chi^2 of the models is computed compared to the uvdata datasets.
+             The dictionary should contains the u, v, Re, Im, w, wav keywords. 
+    paramfile: string
+             Name of the radmc3dModel parameter file. The parameter file is 
+             necessary. Default is 'model_param.inp'.
     nthreads : int
              Number of threads used in multiprocessing mode. This is ignored 
              in MPI mode. Default is 8.
@@ -64,6 +86,9 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
     use_mpi  : bool
              Use MPI pools instead of python threads. Useful for running 
              on computer clusters using multiple nodes. Default is False.
+    verbose  : bool
+             If True then write detailed information messages to the standard 
+             output. Default is False.
     resume   : bool
              If True then resume MCMC chain from file and continue sampling 
              the posterior distribution. nwalkers should not change between 
@@ -87,6 +112,38 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
              run are read from restart_file. If resume parameter is set 
              True, then file must exist.
              Default is "chain.dat".
+    impar    : dict or list of dict, optional
+             Image parameter(s). Known keywords are listed in the runImage()
+             method description. At least the wavelength (wav keyword) must 
+             be set for each images. Default is None.
+    parname  : list, string
+             Names of fitted parameters (string). The known parameter names are 
+             those given in the parameter file. Required to run the fitting. 
+             Default is None.
+    p_range  : list of lists
+             Uniform prior parameter ranges. For each parameter it should contain 
+             a two element list with the minimum and maximum values. Within these 
+             ranges the prior probability is 1, outside it is 0.
+             Default is None.
+    p0       : list
+             Initial values of the fitted parameters. Should have exactly as many 
+             elements as the parname list. The p0 values should be within the 
+             corresponding p_range.
+             Default is None.
+    debug    : bool
+             Passes debug argument to the emcee module. If set then more information 
+             is written to standard output about the MPI processes.
+             Default is False.
+    kwargs   : dict
+    
+    dpc      : float
+             Distance to the modelled object in parsecs. If dpc is not defined 
+             in kwargs, then this value is used.
+             Default is 1.0.
+    incl     : float
+             Inclination of the model in degrees. If incl is not a fit parameter 
+             or not set in kwargs, then this value is used.
+             Default is 60.
     '''
     if use_mpi:
         pool = MPIPool()
@@ -137,7 +194,11 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
 
     # Set parameters for bayes.lnpostfn() function
     if kwargs is None:
-        kwargs = {'dpc': 125., 'incl': 60., 'verbose': verbose, 
+        print ('WARN [{:06}]: kwargs is not provided, using defaults!'.format(0))
+        print ('WARN [{:06}]: using dpc  = {:6.2f}'.format(0, dpc))
+        print ('WARN [{:06}]: using incl = {:6.2f}'.format(0, incl))
+        
+        kwargs = {'dpc': dpc, 'incl': incl, 'verbose': verbose, 
                 'PA':0.0, 'dRA':0.0, 'dDec':0.0,
                 'idisk':True, 'ienv':True, 'icav':False, 'islab':False,
                 'cleanModel': True, 'binary': True, 'chi2_only':True, 
@@ -155,7 +216,7 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
             wav_m = wav_ * 1.0e-6
             npix_, dpix_ = galario.double.get_image_size(dset['u']/wav_m, 
                                                          dset['v']/wav_m)
-            dpix_au = dpix_ / galario.arcsec * kwargs['dpc'] 
+            dpix_au = dpix_ / galario.arcsec * kwargs['dpc']
             sizeau_ = npix_ * dpix_au
 
             impar.append({'npix':npix_, 'wav':wav_, 'sizeau':sizeau_, 
@@ -214,21 +275,19 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
                           kwargs=kwargs, threads=nthreads, pool=pool)
 
     print ("INFO [{:06}]: RUN {} main steps".format(0,nsteps))
-    print ("INFO [{:06}]: status info at every 100 steps:".format(0))
 
     f = open(chain_file, "a")
 
-    for i, step in enumerate(sampler.sample(pos, iterations=nsteps, 
-                                            lnprob0=lnprob0)):
+    for step in sampler.sample(pos, iterations=nsteps, lnprob0=lnprob0):
         position = step[0]
         lnprob = step[1]
+        # Write restart file
         for k in range(nwalkers):
             posstr = ''.join(np.vectorize("%12.5E ".__mod__)(position[k]))
             f.write("{:04d} {:s}{:12.5E}\n".format(k, posstr, lnprob[k]))
+        # Run garbage collection
         f.flush()
-        # Print progress info
-        if (i+1) % 100 == 0:
-            print("INFO [{:06}]: {:5.1%} done".format(0,float(i+1) / nsteps))
+        gc.collect()
 
     f.close()
 
@@ -255,7 +314,7 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
 
     # Save chain and metadata
     # Note that protocol=2 needed for python 2/3 compatibility
-    pickle.dump( results, open( 'elias29_mcmc_save.p', 'wb' ), protocol=2 )
+    pickle.dump( results, open( 'chain.p', 'wb' ), protocol=2 )
 
     # Return
     os.chdir(current_dir)

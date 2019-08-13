@@ -236,7 +236,7 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     # Check uvdata
 
 
-    # compute the model brightness profile    
+    # compute the model brightness profile
     mod = main.radmc3dModel(modpar=modpar, model_dir=model_dir, 
                             resource_dir=resource_dir, ID=rand,
                             binary=binary, idisk=idisk, ienv=ienv, 
@@ -255,37 +255,14 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
                chi2_only, galario_check=galario_check, time=time, 
                verbose=verbose)
 
+    chi2 = -0.5 * np.sum(mod.chi2) + lnprior
+    
     # Delete model folder from disk if requested
     if cleanModel:
         mod.cleanModel()
-
-    chi2 = -0.5 * np.sum(mod.chi2) + lnprior
+        del mod
     
     if verbose:
         print ("INFO [{:06}]: model ch^2 = {:10.6E}".format(rand, chi2))
 
-    return chi2
-
-def relative_chi2(mod):
-    '''
-    '''
-    if mod.vis_inp is None:
-        warnings.warn('vis_inp not in radmc3dModel object!')
-        return np.nan
-    if mod.vis_mod is None:
-        warnings.warn('vis_mod not in radmc3dModel object!')
-        return np.nan
-    
-    nvis = len(mod.nvis)
-    chi2 = 0.0
-    
-    for i in range(nvis):
-        
-        w = mod.vis_inp[i].weights
-        
-        tmp = np.sum( w * (mod.vis_inp[i].re - mod.vis_mod[i].re)**2/abs(mod.vis_mod[i].re) + 
-                              (mod.vis_inp[i].im - mod.vis_mod[i].im)**2/abs(mod.vis_mod[i].im) ) / mod.nvis[i]
-        print (tmp)
-        chi2 = chi2 + tmp
-    
     return chi2

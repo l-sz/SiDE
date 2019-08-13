@@ -764,7 +764,7 @@ class radmc3dModel:
         os.chdir(self.model_dir)
         
         # Initialize radmc3dRunner
-        self.rrun = runner.radmc3dRunner(model_dir=self.model_dir, bufsize=500000,
+        self.rrun = runner.radmc3dRunner(model_dir=self.model_dir, bufsize=bufsize,
                                          nthreads=nthreads, radmc3dexec=None, 
                                          ID=self.ID, verbose=verbose)
         
@@ -799,9 +799,7 @@ class radmc3dModel:
                         tmp.imageJyppix = img.imageJyppix[:,:,jp].reshape((img.nx,img.ny,1))
                         self.image.append(tmp)
 
-        # Compute SED(s) if needed
-        #
-        #
+        # TODO: Compute SED(s) if needed
 
         # Terminate radmc3dRunner
         self.rrun.terminate(verbose=verbose)
@@ -815,12 +813,16 @@ class radmc3dModel:
         os.chdir(current_dir)
         
         return 0
-        
+
     def getVis(self, uvdata, dpc=1.0, PA=None, dRA=None, dDec=None, chi2_only=False, 
                galario_check=False, verbose=None, time=False):
         '''
         Compute visibility of previously computed images and their chi2 
         compared to observations, using the Galario library.
+        
+        When multiple visibility datasets are provided, then equal number of 
+        corresponding images need to exist in the self.image class variable.
+        The order of visibility datasets and the order of images must match.
         
         Parameters
         ----------
@@ -904,10 +906,6 @@ class radmc3dModel:
                     raise ValueError('dDec list ({}) and uvdata ({})element numbers do not match!'.format(
                         n_dDec,n_uvdata))
 
-            wav_arr = []
-            for im in self.image:
-                wav_arr.append(im.wav[0])
-
             # Set galario threads to 1, parallelisation is done by emcee and MPI
             galario.double.threads(1)
 
@@ -954,13 +952,13 @@ class radmc3dModel:
                 else:
                     dDec_use = 0.0
 
-                # Find image for uv wavelength
-                try:
-                    iim = wav_arr.index(wav)
-                except:
-                    print ('WARN [{:06}]: micron image not found,\
-                           continue...'.format(self.ID, wav))
-                    continue
+                # Use always the nth image for the nth visibility data set
+                iim = i
+                
+                # Warn if the wavelength does not match
+                wav_im = self.image[iim].wav[0]
+                if wav != wav_im:
+                     print ('WARN [{:06}]: {}th image and visibility data wavelength does not match! ({}, {})'.format(self.ID, i, wav, wav_im))
 
                 if self.vis_mod is None:
                     self.vis_mod = []

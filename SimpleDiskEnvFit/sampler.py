@@ -33,8 +33,8 @@ from . import tools
 __all__ = ['run_mcmc']
 
 def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8, 
-             nwalkers=40, nsteps=300, nburnin=0, use_mpi=False, verbose=False, 
-             resume=False, sloppy=False, chain_file='chain.dat', 
+             nwalkers=40, nsteps=300, nburnin=0, use_mpi=False, loadbalance=False,
+             verbose=False, resume=False, sloppy=False, chain_file='chain.dat', 
              restart_file='chain.dat', impar=None, parname=None, p_ranges=None, 
              p0=None, debug=False, kwargs=None, dpc=1.0, incl=60.):
     '''
@@ -54,14 +54,14 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
 
     The MCMC chains are saved in a Python readable pickle file (chain.p) and 
     in an ASCII file (chain.dat). The pickle file contains additional information 
-    (e.g. uniform prior ranges, observational constraints, metadata), but it is 
+    (e.g. uniform prior ranges, observational constraints, meta-data), but it is 
     only written at the successful finish of the MCMC run. The ASCII output 
     saves only the current parameters of the chains and the model likelihood, 
     but it is updated after each MCMC step. This file can be used to restart 
     runs that ended before completion (e.g. because the allocated time run out 
     on the cluster).
     
-    The resulting chain and metadata is also returned as a dictionary.
+    The resulting chain and meta-data is also returned as a dictionary.
 
     Parameters
     ----------
@@ -75,17 +75,24 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
              Name of the radmc3dModel parameter file. The parameter file is 
              necessary. Default is 'model_param.inp'.
     nthreads : int
-             Number of threads used in multiprocessing mode. This is ignored 
-             in MPI mode. Default is 8.
+             Number of threads used in multiprocessing mode. In MPI mode the 
+             parameter sets the number of OpenMP threads used by RADMC-3D and 
+             galario. nthreads should not be larger than the total number of 
+             CPU threads. Default is 8.
     nwalkers : int
              Number of walkers used. Default is 40.
     nsteps   : int
              Number of walker steps in the main run. Default is 300.
     nburnin  : int
-             Number of walker steps in initial "burn-in" run. Default is 100.
+             Number of walker steps in initial "burn-in" run. Default is 0.
     use_mpi  : bool
              Use MPI pools instead of python threads. Useful for running 
              on computer clusters using multiple nodes. Default is False.
+    loadbalance : bool
+             When the MPI mode is used and the runtime of individual log-probability
+             function calls vary significantly and ntask > Ncpu, then setting this
+             parameter to True may improve the overall computational speed. 
+             Default is False.
     verbose  : bool
              If True then write detailed information messages to the standard 
              output. Default is False.
@@ -135,7 +142,13 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
              is written to standard output about the MPI processes.
              Default is False.
     kwargs   : dict
-    
+             Dictionary containing keyword arguments for the lnpostfn() function.
+             For details see the docstring of bayes.lnpostfn(). 
+             Important: the dpc, incl, PA, dRA, dDec parameters given as an 
+             argument to lnpostfn() overwrite the corresponding values given in 
+             impar. If kwargs is not set, then these will be overwritten by the 
+             lnpostfn() default arguments!
+             Default is None.
     dpc      : float
              Distance to the modelled object in parsecs. If dpc is not defined 
              in kwargs, then this value is used.
@@ -146,20 +159,23 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
              Default is 60.
     '''
     if use_mpi:
-        pool = MPIPool()
+        pool = MPIPool(loadbalance=loadbalance)
         if not pool.is_master():
             os.chdir(main_dir)
             pool.wait()
             sys.exit(0)
+        nthreads_openmp = nthreads
+        nthreads = pool.size
     else:
         pool = None
+        nthreads_openmp = 1
 
     # Change to main_dir in order to find the UV obs. data files
     current_dir = os.path.realpath('.')
     os.chdir(main_dir)
 
-    print ("INFO [{:06}]: nthreads [{}], nwalkers [{}], nburnin [{}], nsteps [{}]".format(0, 
-                                             nthreads, nwalkers, 
+    print ("INFO [{:06}]: nthreads [{}], nthreads_openmp [{}], nwalkers [{}], nburnin [{}], nsteps [{}]".format(0, 
+                                             nthreads, nthreads_openmp, nwalkers, 
                                              nburnin, nsteps))
     print ("INFO [{:06}]: USE_MPI is {}".format(0, use_mpi))
 
@@ -229,6 +245,7 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
     # Update kwargs keys if needed
     kwargs['verbose'] = verbose
     kwargs['impar'] = impar
+    kwargs['nthreads'] = nthreads_openmp
 
     # Number of fitted parameters
     ndim = len(p_ranges)
@@ -263,13 +280,20 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
 
     # Create chain file and write header
     f = open(chain_file, "w")
-    f.write('# nwalkers = {:3d}, nthreads = {:3d}, nsteps = {:5d}, MPI = {}\n'.format(
-               nwalkers, nthreads, nsteps, use_mpi))
+    f.write('# nwalkers = {:3d}, nthreads = {:3d}, nthreads_openmp = {:3d}, nsteps = {:5d}, MPI = {}\n'.format(
+               nwalkers, nthreads, nthreads_openmp, nsteps, use_mpi))
     f.write('# i_walker {}  lnprob\n'.format(''.join(
                                         np.vectorize(" %s".__mod__)(parname))))
     f.close()
 
     # Create and run sampler
+    #
+    # Note the difference between nthreads and nthreads_openmp. The meaning of 
+    # the parameter depends on USE_MPI: if True, then nthreads is the number of 
+    # MPI threads, nthreads_openmp is the number of OpenMP threads. If False,
+    # then nthreads is the number of threads used by emcee and nthreads_openmp 
+    # is 1. (nthreads_openmp is set in kwargs)
+    #
     sampler = EnsembleSampler(nwalkers, ndim, bayes.lnpostfn,
                           args=[p_ranges, parname, par, main_dir, uvdata],
                           kwargs=kwargs, threads=nthreads, pool=pool)
@@ -285,8 +309,8 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
         for k in range(nwalkers):
             posstr = ''.join(np.vectorize("%12.5E ".__mod__)(position[k]))
             f.write("{:04d} {:s}{:12.5E}\n".format(k, posstr, lnprob[k]))
-        # Run garbage collection
         f.flush()
+        # Run garbage collection
         gc.collect()
 
     f.close()

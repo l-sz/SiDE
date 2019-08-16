@@ -815,7 +815,7 @@ class radmc3dModel:
         return 0
 
     def getVis(self, uvdata, dpc=1.0, PA=None, dRA=None, dDec=None, chi2_only=False, 
-               galario_check=False, verbose=None, time=False):
+               galario_check=False, nthreads=1, verbose=None, time=False):
         '''
         Compute visibility of previously computed images and their chi2 
         compared to observations, using the Galario library.
@@ -831,6 +831,9 @@ class radmc3dModel:
                 'w' and 'wav' keywords need to be defined.
         dpc  :  float
                 Distance to object in unit of parsec, Default is 1.0.
+        nthreads : int
+                Number of threads used by galario for transforming between 
+                image and visibility space. Default is 1.
         PA   :  float or list of floats, optional
                 Position angle in radian. If multiple images are processed, then 
                 each image may use a different PA value, if a list is provided. 
@@ -906,8 +909,8 @@ class radmc3dModel:
                     raise ValueError('dDec list ({}) and uvdata ({})element numbers do not match!'.format(
                         n_dDec,n_uvdata))
 
-            # Set galario threads to 1, parallelisation is done by emcee and MPI
-            galario.double.threads(1)
+            # Set number of threads used in galario
+            galario.double.threads(nthreads)
 
             for i in range(len(uvdata)):
                 

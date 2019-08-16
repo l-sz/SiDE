@@ -49,9 +49,9 @@ def lnpriorfn(p, par_ranges):
     return jacob
 
 def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
-             dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0, idisk=True, 
-             ienv=True, icav=False, islab=False, impar=None, verbose=False, 
-             cleanModel=False, binary=False, chi2_only=True, 
+             dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0, nthreads=1,
+             idisk=True, ienv=True, icav=False, islab=False, impar=None, 
+             verbose=False, cleanModel=False, binary=False, chi2_only=True, 
              galario_check=False, time=False):
     """
     Log of posterior probability function.
@@ -89,6 +89,9 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
             Offset in RA in radian. Default is 0.0.
     dDec :  float, optional
             Offset in Dec in radian. Default is 0.0.
+    nthreads : int
+            Number of OpenMP (shared memory) threads used in the RADMC-3D thermal 
+            Monte Carlo and galario computations. Default is 1.
     idisk : bool
             Include disk component in model. Default is True.
     ienv  : bool
@@ -244,7 +247,7 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     mod.write2folder()
 
     mod.runModel(impar=impar, mctherm=True, nphot_therm=100000, verbose=verbose,
-                 time=time, get_tdust=False)
+                 time=time, get_tdust=False, nthreads=nthreads)
 
     # Use the correct distance
     if type(impar) == list:
@@ -253,7 +256,7 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
         dpc_vis = impar['dpc']
     mod.getVis(uvdata, dpc=dpc_vis, PA=PA, dRA=dRA, dDec=dDec, chi2_only=
                chi2_only, galario_check=galario_check, time=time, 
-               verbose=verbose)
+               verbose=verbose, nthreads=nthreads)
 
     chi2 = -0.5 * np.sum(mod.chi2) + lnprior
     

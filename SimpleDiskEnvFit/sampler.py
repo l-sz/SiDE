@@ -219,7 +219,8 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
 
     # Create and run sampler
     sampler = EnsembleSampler(nwalkers, ndim, bayes.lnpostfn,
-                          args=[p_ranges, p0, p_form, p_formprior, p_sigma, parname, par, main_dir, uvdata],
+                          args=[p_form, p_ranges, p_formprior, p0, p_sigma, 
+                                parname, par, main_dir, uvdata],
                           kwargs=kwargs, threads=nthreads, pool=pool)
 
     print ("INFO [{:06}]: RUN {} main steps".format(0,nsteps))

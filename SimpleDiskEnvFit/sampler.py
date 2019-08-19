@@ -33,7 +33,7 @@ from . import tools
 
 __all__ = ['run_mcmc']
 
-def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8, 
+def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=1, 
              nwalkers=40, nsteps=300, nburnin=0, use_mpi=False, loadbalance=False,
              verbose=False, resume=False, sloppy=False, chain_file='chain.dat', 
              restart_file='chain.dat', impar=None, parname=None, p_ranges=None, 
@@ -80,7 +80,7 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
              Number of threads used in multiprocessing mode. In MPI mode the 
              parameter sets the number of OpenMP threads used by RADMC-3D and 
              galario. nthreads should not be larger than the total number of 
-             CPU threads. Default is 8.
+             CPU threads. Default is 1.
     nwalkers : int
              Number of walkers used. Default is 40.
     nsteps   : int
@@ -217,6 +217,15 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
     
     if p0 is None:
         raise ValueError('p0 must be provided!')
+
+    if p_form is None:
+        raise ValueError('p_form must be provided!')
+
+    if p_formprior is None:
+        raise ValueError('p_formprior must be provided!')
+    
+    if p_sigma is None:
+        raise ValueError('p_sigma must be provided!')
 
     # Read parameter file 
     par = main.getParams(paramfile=paramfile)

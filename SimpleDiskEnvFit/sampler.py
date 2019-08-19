@@ -21,6 +21,7 @@ import gc
 import pickle
 import numpy as np
 
+import mpi4py
 from emcee import EnsembleSampler
 from emcee.utils import MPIPool
 import galario
@@ -159,11 +160,22 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
              Default is 60.
     '''
     if use_mpi:
-        pool = MPIPool(loadbalance=loadbalance)
+        version= mpi4py.MPI.Get_version()
+        comm = mpi4py.MPI.COMM_WORLD
+        size = comm.Get_size()
+        rank = comm.Get_rank()
+        universe_size=comm.Get_attr(mpi4py.MPI.UNIVERSE_SIZE)
+        
+        print ('INFO [{:06}]: MPI: {} (version), {} (size), {} (rank), {} (universe)'.format(
+                            0, version, size, rank, universe_size))
+        
+        pool = MPIPool(comm=comm, debug=debug, loadbalance=loadbalance)
+        
         if not pool.is_master():
             os.chdir(main_dir)
             pool.wait()
             sys.exit(0)
+    
         nthreads_openmp = nthreads
         nthreads = pool.size
     else:

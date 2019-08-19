@@ -37,7 +37,8 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
              nwalkers=40, nsteps=300, nburnin=0, use_mpi=False, loadbalance=False,
              verbose=False, resume=False, sloppy=False, chain_file='chain.dat', 
              restart_file='chain.dat', impar=None, parname=None, p_ranges=None, 
-             p0=None, debug=False, kwargs=None, dpc=1.0, incl=60.):
+             p0=None, p_form=None, p_formprior=None, p_sigma=None, debug=False, 
+             kwargs=None, dpc=1.0, incl=60.):
     '''
     Computes posteriori probabilities of parametrised Class 0/I models given 
     a set of observational constraints and radiative transfer model parameters.
@@ -299,18 +300,13 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
     f.close()
 
     # Create and run sampler
-    #
-    # Note the difference between nthreads and nthreads_openmp. The meaning of 
-    # the parameter depends on USE_MPI: if True, then nthreads is the number of 
-    # MPI threads, nthreads_openmp is the number of OpenMP threads. If False,
-    # then nthreads is the number of threads used by emcee and nthreads_openmp 
-    # is 1. (nthreads_openmp is set in kwargs)
-    #
     sampler = EnsembleSampler(nwalkers, ndim, bayes.lnpostfn,
-                          args=[p_ranges, parname, par, main_dir, uvdata],
+                          args=[p_form, p_ranges, p_formprior, p0, p_sigma, 
+                                parname, par, main_dir, uvdata],
                           kwargs=kwargs, threads=nthreads, pool=pool)
 
     print ("INFO [{:06}]: RUN {} main steps".format(0,nsteps))
+    print ("INFO [{:06}]: status info at every 100 steps:".format(0))
 
     f = open(chain_file, "a")
 
@@ -344,7 +340,8 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
 
     # Save results
     results = {'chain': chain, 'accept_frac':accept_frac, 'lnprob':lnprob, 
-               'parname':parname, 'p_ranges':p_ranges, 'p0':p0, 'ndim':ndim, 
+               'parname':parname, 'p_ranges':p_ranges, 'p0':p0, 'p_form':p_form, 
+               'p_formprior':p_formprior, 'p_sigma':p_sigma, 'ndim':ndim, 
                'nwalkers':nwalkers, 'nthreads':nthreads, 'nsteps':nsteps, 
                'nburnin':nburnin, 'uvdata':uvdata, 'impar':impar}
 

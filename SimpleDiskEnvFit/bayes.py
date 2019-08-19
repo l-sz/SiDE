@@ -23,7 +23,7 @@ import os
 
 __all__ = ['lnpriorfn','lnpostfn','relative_chi2']
 
-def lnpriorfn(p, par_ranges):
+def lnpriorfn(p, par_ranges, p_formprior, p0, p_sigma):
     """
     Uniform prior probability function.
     
@@ -38,32 +38,61 @@ def lnpriorfn(p, par_ranges):
     par_ranges : list or list of lists
         Prior constraints. Assumption of parameter ranges. Should contain a 
         range for each parameters.
+    p_formprior : list of strings
+        Sets the functional form of the prior probability distribution. It should 
+        be set to 'normal' or 'uniform' for a Gaussian or rectangular distribution, 
+        respectively. Must have exactly as many elements as p.
+    p0 : list
+        Initial parameter values. It is used as the position of the peak of the
+        Gaussian distribution. Must have exactly as many elements as p. If 
+        p_formprior[i] is 'uniform', then p0[i] is not used.
+    p_sigma : list
+        Width of the Gaussian function. Must have exactly as many elements as p. If 
+        p_formprior[i] is 'uniform', then p_sigma[i] is not used.
     """
+    jacob = 0.0
 
     for i in range(len(p)):
-        if p[i] < np.min(par_ranges[i]) or p[i] > np.max(par_ranges[i]):
-            return -np.inf
-
-    jacob = 0.0       # jacobian of the log transformation
+        if p_formprior[i] == 'normal':
+            if p[i] < np.min(par_ranges[i]) or p[i] > np.max(par_ranges[i]):
+                return -np.inf
+            jacob += np.log10(np.exp(-(p[i] - p0[i])**2/(2*p_sigma[i]**2)))                      
+        else:
+            if p[i] < np.min(par_ranges[i]) or p[i] > np.max(par_ranges[i]):
+                return -np.inf
+            jacob += 0.0
 
     return jacob
 
-def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
-             dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0, nthreads=1,
-             idisk=True, ienv=True, icav=False, islab=False, impar=None, 
-             verbose=False, cleanModel=False, binary=False, chi2_only=True, 
-             galario_check=False, time=False):
+def lnpostfn(p, p_form, p_ranges, p_formprior, p0, p_sigma, parname, modpar, 
+             resource_dir, uvdata, dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0, 
+             nthreads=1, idisk=True, ienv=True, icav=False, islab=False,
+             impar=None, verbose=False, cleanModel=False, binary=False, 
+             chi2_only=True, galario_check=False, time=False):
     """
     Log of posterior probability function.
     
     Parameters
     ----------
     p   :   list
-            Prior probability is returned for these parameters. Normally this is 
-            provided by the emcee sampler.
-    par_ranges : list or list of lists
+            Posterior probability is returned for these parameters. Normally 
+            this is provided by the emcee sampler.
+    p_form : list of strings
+            Sets whether p[i] is logarithmic (i.e. that val = 10**p[i]) or linear
+            (val = p[i]). Must have as many elements as p.
+    p_ranges : list of lists
             Prior constraints. Assumption of parameter ranges. Should contain a 
             range for each parameters.
+    p_formprior : list of strings
+            Sets the function form of the prior probability function ('normal' or
+            'uniform'. Must have as many elements as p.
+    p0   :  list
+            Initial parameter values. These are used as the location of the peak 
+            when Gaussian (normal) prior probability function is used. Must have 
+            as many elements as p.
+    p_sigma : list
+            Width of the Gaussian prior probability function. Must have as many 
+            elements as p.
     parname : list of string
             Names of fitted parameters following the radmc3dPy.modPar and 
             getParam() conventions. This has to have the same number of elements 
@@ -134,7 +163,7 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     rand = np.random.randint(0,99999)
 
     # Apply prior
-    lnprior = lnpriorfn(p, p_ranges)
+    lnprior = lnpriorfn(p, p_ranges, p_formprior, p0, p_sigma)
     if not np.isfinite(lnprior):
         if verbose:
             print ("INFO [{:06}]: model rejected ({})".format(rand,p))
@@ -147,19 +176,18 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     # Update parameters
     for i in range(len(parname)):
         
+        # Set parameter value
+        if p_form[i] == 'log':
+            val = 10**p[i]
+        else:
+            val = p[i]	
+        
         # Special cases
         if parname[i] in ['mdisk','m_slab']:
-            val = 10.0**p[i] * nc.ms
-        elif parname[i] in ['rho0Env','rho0_slab']:
-            val = 10**p[i]
-        elif parname[i] in ['rdisk','r0Env','rTrunEnv']:
-            val = 10**p[i] * nc.au
-        elif parname[i] in ['r0_slab','r1_slab','h0_slab','h1_slab']:
-            val = 10**p[i] * nc.au
-        elif parname[i][0:3] == 'gsm': # gsmin or gsmax
-            val = 10.0**p[i]
-        else:
-            val = p[i]
+            val = val * nc.ms
+        elif parname[i] in ['rdisk','r0Env','rTrunEnv','r0_slab','r1_slab', 
+                            'h0_slab','h1_slab']:
+            val = val * nc.au
         
         # If rTrunEnv is not a fit parameter then set it equal to rdisk.
         if parname[i] == 'rdisk' and 'rTrunEnv' in modpar.ppar.keys():

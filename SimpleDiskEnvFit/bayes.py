@@ -23,7 +23,7 @@ import os
 
 __all__ = ['lnpriorfn','lnpostfn','relative_chi2']
 
-def lnpriorfn(p, par_ranges):
+def lnpriorfn(p, par_ranges, p0, p_form, p_formprior, p_sigma):
     """
     Uniform prior probability function.
     
@@ -39,16 +39,23 @@ def lnpriorfn(p, par_ranges):
         Prior constraints. Assumption of parameter ranges. Should contain a 
         range for each parameters.
     """
+    jacob = 0.0
 
     for i in range(len(p)):
-        if p[i] < np.min(par_ranges[i]) or p[i] > np.max(par_ranges[i]):
-            return -np.inf
-
-    jacob = 0.0       # jacobian of the log transformation
+        if p_formprior[i] == 'normal':
+            if p[i] < np.min(par_ranges[i]) or p[i] > np.max(par_ranges[i]):
+                return -np.inf
+            jacob += np.log10(np.exp(-(p[i] - p0[i])**2/(2*p_sigma[i]**2)))                      
+        else:
+            if p[i] < np.min(par_ranges[i]) or p[i] > np.max(par_ranges[i]):
+                return -np.inf
+            jacob += 0.0
 
     return jacob
 
-def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
+
+
+def lnpostfn(p, p_ranges, p0, p_form, p_formprior, p_sigma, parname, modpar, resource_dir, uvdata,
              dpc=1.0, incl=45., PA=0.0, dRA=0.0, dDec=0.0, idisk=True, 
              ienv=True, icav=False, islab=False, impar=None, verbose=False, 
              cleanModel=False, binary=False, chi2_only=True, 
@@ -131,7 +138,7 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     rand = np.random.randint(0,99999)
 
     # Apply prior
-    lnprior = lnpriorfn(p, p_ranges)
+    lnprior = lnpriorfn(p, p_ranges, p0, p_form, p_formprior, p_sigma)
     if not np.isfinite(lnprior):
         if verbose:
             print ("INFO [{:06}]: model rejected ({})".format(rand,p))
@@ -144,19 +151,17 @@ def lnpostfn(p, p_ranges, parname, modpar, resource_dir, uvdata,
     # Update parameters
     for i in range(len(parname)):
         
+        #NEW
+        if p_form[i] == 'log':
+            val = 10**p[i]
+        else:
+            val = p[i]	
+        
         # Special cases
         if parname[i] in ['mdisk','m_slab']:
-            val = 10.0**p[i] * nc.ms
-        elif parname[i] in ['rho0Env','rho0_slab']:
-            val = 10**p[i]
-        elif parname[i] in ['rdisk','r0Env','rTrunEnv']:
-            val = 10**p[i] * nc.au
-        elif parname[i] in ['r0_slab','r1_slab','h0_slab','h1_slab']:
-            val = 10**p[i] * nc.au
-        elif parname[i][0:3] == 'gsm': # gsmin or gsmax
-            val = 10.0**p[i]
-        else:
-            val = p[i]
+            val = val * nc.ms
+        elif parname[i] in ['rdisk','r0Env','rTrunEnv','r0_slab','r1_slab','h0_slab','h1_slab']:
+            val = val * nc.au
         
         # If rTrunEnv is not a fit parameter then set it equal to rdisk.
         if parname[i] == 'rdisk' and 'rTrunEnv' in modpar.ppar.keys():

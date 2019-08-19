@@ -34,8 +34,8 @@ __all__ = ['run_mcmc']
 def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8, 
              nwalkers=40, nsteps=300, nburnin=100, use_mpi=False, verbose=False, 
              resume=False, sloppy=False, chain_file='chain.dat', 
-             restart_file='chain.dat', impar=None, parname=None, p_ranges=None, 
-             p0=None, kwargs=None):
+             restart_file='chain.dat', impar=None, parname=None, p_ranges=None,	p0=None,
+	     p_form=None, p_formprior=None, p_sigma=None, kwargs=None):
     '''
     Computes posteriori probabilities of parametrised Class 0/I models given 
     a set of observational constraints using SimpleDiskEnvFit.
@@ -131,6 +131,15 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
     
     if p0 is None:
         raise ValueError('p0 must be provided!')
+    
+    if p_form is None:
+        raise ValueError('p_form must be provided!')
+
+    if p_formprior is None:
+        raise ValueError('p_formprior must be provided!')
+
+    if p_sigma is None:
+        raise ValueError('p_sigma must be provided!')
 
     # Read parameter file 
     par = main.getParams(paramfile=paramfile)
@@ -210,7 +219,7 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
 
     # Create and run sampler
     sampler = EnsembleSampler(nwalkers, ndim, bayes.lnpostfn,
-                          args=[p_ranges, parname, par, main_dir, uvdata],
+                          args=[p_ranges, p0, p_form, p_formprior, p_sigma, parname, par, main_dir, uvdata],
                           kwargs=kwargs, threads=nthreads, pool=pool)
 
     print ("INFO [{:06}]: RUN {} main steps".format(0,nsteps))
@@ -249,7 +258,8 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=8,
 
     # Save results
     results = {'chain': chain, 'accept_frac':accept_frac, 'lnprob':lnprob, 
-               'parname':parname, 'p_ranges':p_ranges, 'p0':p0, 'ndim':ndim, 
+               'parname':parname, 'p_ranges':p_ranges, 'p0':p0, 'p_form':p_form, 'p_formprior':p_formprior,
+               'p_sigma':p_sigma, 'ndim':ndim, 
                'nwalkers':nwalkers, 'nthreads':nthreads, 'nsteps':nsteps, 
                'nburnin':nburnin, 'uvdata':uvdata, 'impar':impar}
 

@@ -33,7 +33,7 @@ from . import tools
 
 __all__ = ['run_mcmc']
 
-def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=1, 
+def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=1, nthreads_openmp=1,
              nwalkers=40, nsteps=300, nburnin=0, use_mpi=False, loadbalance=False,
              verbose=False, resume=False, sloppy=False, chain_file='chain.dat', 
              restart_file='chain.dat', impar=None, parname=None, p_ranges=None, 

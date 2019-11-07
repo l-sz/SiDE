@@ -53,8 +53,7 @@ class radmc3dRunner:
         
         self.model_dir = model_dir
         
-        self.proc = subprocess.Popen([self.radmc3dexec, 'child', 'setthreads',
-                                      str(nthreads)], shell=False,
+        self.proc = subprocess.Popen([self.radmc3dexec, 'child'], shell=False,
                                       stdin=subprocess.PIPE, 
                                       stdout=subprocess.PIPE, 
                                       bufsize=bufsize)
@@ -95,9 +94,9 @@ class radmc3dRunner:
             
         return 0
     
-    def runMCtherm(self, noscat=None, nphot_therm=None, 
-                    nphot_scat=None, nphot_mcmono=None, 
-                    verbose=None, time=False):
+    def runMCtherm(self, noscat=None, nphot_therm=None, nphot_scat=None, 
+                   nphot_mcmono=None, verbose=None, nthreads=None, 
+                   time=False):
         '''
         Send instruction to RADCM3D child process to compute dust temperature.
         
@@ -128,6 +127,9 @@ class radmc3dRunner:
                 If None, then option from radmc3d.inp is used.
         verbose : bool, optional
                 Print INFO messages to standard output. Default is False.
+        nthreads : int, optional
+                Number of computer threads used for the therman MC and image computation.
+                Default is None (i.e. RADMC-3D defaults are used)
         time :  bool, optional
                 Prints function runtime information. Useful for profiling.
                 Default is False.
@@ -156,6 +158,9 @@ class radmc3dRunner:
         if nphot_mcmono:
             self.proc.stdin.write(b"nphot_mcmono\n")
             self.proc.stdin.write(str.encode("{}\n".format(str(int(nphot_mcmono)))))
+        if nthreads:
+            self.proc.stdin.write(b"setthreads\n")
+            self.proc.stdin.write(str.encode("{}\n".format(str(int(nthreads)))))
 
         self.proc.stdin.write(b"respondwhenready\n")
 
@@ -246,6 +251,11 @@ class radmc3dRunner:
         '''
 
         self.proc.stdin.write(b"image\n")
+        
+        # Workaround crashes on cobra when setthreads > 1
+        # setthreads = 1 for image computation
+        self.proc.stdin.write(b"setthreads\n")
+        self.proc.stdin.write(str.encode("{}\n".format(str(int(1)))))
         
         if incl:
             self.proc.stdin.write(b"incl\n")

@@ -774,6 +774,7 @@ class radmc3dModel:
                                  nphot_therm=nphot_therm,
                                  nphot_scat=nphot_scat, 
                                  nphot_mcmono=nphot_mcmono,
+                                 nthreads=nthreads,
                                  verbose=verbose, time=time)
         
         # Compute image(s)

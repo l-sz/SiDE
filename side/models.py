@@ -4,8 +4,8 @@
 # The code heavily relies on radmc3dPy package by Attila Juhasz:
 # (https://www.ast.cam.ac.uk/~juhasz/radmc3dPyDoc/index.html)
 #
-# Original SimpleDiskEnvFit source available at:
-# https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnvFit
+# Original SimpleDiskEnvFit (SiDE) source available at:
+# https://github.com/l-sz/SiDE
 #  
 # Copyright (C) 2019 Laszlo Szucs <laszlo.szucs@mpe.mpg.de>
 #
@@ -200,7 +200,7 @@ def slab(grid, r0=0.0, r1=0.0, H0=0.0, H1=0.0, rho0=0.0, sig0=None, smoothed=Tru
     '''
     Returns the dust density distribution of a slab between r0 and r1 radius and 
     z0 and z1 in height. The slab is rectangular in Cartesian coordinates.
-    SimpleDiskEnvFit, however, uses spherical coordinate system, where the cells 
+    SiDE, however, uses spherical coordinate system, where the cells 
     have curved shapes. Adding a slab with Hz < r will result in blocky density 
     distribution.
     

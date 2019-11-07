@@ -3,8 +3,8 @@ import sys
 import numpy as np
 from galario import arcsec, deg
 
-from SimpleDiskEnvFit import tools
-from SimpleDiskEnvFit import run_mcmc
+from side import tools
+from side import run_mcmc
 
 if __name__ == "__main__":
     

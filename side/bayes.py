@@ -4,8 +4,8 @@
 # The code heavily relies on radmc3dPy package by Attila Juhasz:
 # (https://www.ast.cam.ac.uk/~juhasz/radmc3dPyDoc/index.html)
 #
-# Original SimpleDiskEnvFit source available at:
-# https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnvFit
+# Original SimpleDiskEnvFit (SiDE) source available at:
+# https://github.com/l-sz/SiDE
 #  
 # Copyright (C) 2019 Laszlo Szucs <laszlo.szucs@mpe.mpg.de>
 #
@@ -104,7 +104,7 @@ def lnpostfn(p, p_form, p_ranges, p_formprior, p0, p_sigma, parname, modpar,
     resource_dir : sting
             Path (absolute or relative) to the folder containing additional 
             files (e.g. dust opacity or lnk files) that are needed to create 
-            the model. Defaults to {SIMPLEDISKENVFIT_HOME}/lnk_files.
+            the model. Defaults to {SIDE_HOME}/lnk_files.
     uvdata : dict or list of dict 
             Containing observed visibility data. The 'u', 'v', 'Re', 'Im', 
             'w' and 'wav' keywords need to be defined.

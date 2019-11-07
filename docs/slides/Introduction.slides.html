@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -13069,45 +13068,6 @@ ul.typeahead-list  > li > a.pull-right {
 .highlight .vm { color: #19177C } /* Name.Variable.Magic */
 .highlight .il { color: #666666 } /* Literal.Number.Integer.Long */
     </style>
-<style type="text/css">
-    
-/* Temporary definitions which will become obsolete with Notebook release 5.0 */
-.ansi-black-fg { color: #3E424D; }
-.ansi-black-bg { background-color: #3E424D; }
-.ansi-black-intense-fg { color: #282C36; }
-.ansi-black-intense-bg { background-color: #282C36; }
-.ansi-red-fg { color: #E75C58; }
-.ansi-red-bg { background-color: #E75C58; }
-.ansi-red-intense-fg { color: #B22B31; }
-.ansi-red-intense-bg { background-color: #B22B31; }
-.ansi-green-fg { color: #00A250; }
-.ansi-green-bg { background-color: #00A250; }
-.ansi-green-intense-fg { color: #007427; }
-.ansi-green-intense-bg { background-color: #007427; }
-.ansi-yellow-fg { color: #DDB62B; }
-.ansi-yellow-bg { background-color: #DDB62B; }
-.ansi-yellow-intense-fg { color: #B27D12; }
-.ansi-yellow-intense-bg { background-color: #B27D12; }
-.ansi-blue-fg { color: #208FFB; }
-.ansi-blue-bg { background-color: #208FFB; }
-.ansi-blue-intense-fg { color: #0065CA; }
-.ansi-blue-intense-bg { background-color: #0065CA; }
-.ansi-magenta-fg { color: #D160C4; }
-.ansi-magenta-bg { background-color: #D160C4; }
-.ansi-magenta-intense-fg { color: #A03196; }
-.ansi-magenta-intense-bg { background-color: #A03196; }
-.ansi-cyan-fg { color: #60C6C8; }
-.ansi-cyan-bg { background-color: #60C6C8; }
-.ansi-cyan-intense-fg { color: #258F8F; }
-.ansi-cyan-intense-bg { background-color: #258F8F; }
-.ansi-white-fg { color: #C5C1B4; }
-.ansi-white-bg { background-color: #C5C1B4; }
-.ansi-white-intense-fg { color: #A1A6B2; }
-.ansi-white-intense-bg { background-color: #A1A6B2; }
-
-.ansi-bold { font-weight: bold; }
-
-    </style>
 
 
 <style type="text/css">
@@ -13242,7 +13202,7 @@ a.anchor-link {
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="A-tool-for-fitting-interferometric-data">A tool for fitting interferometric data<a class="anchor-link" href="#A-tool-for-fitting-interferometric-data">&#182;</a></h1><p><a href="https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnvFit">https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnvFit</a></p>
+<h1 id="A-tool-for-fitting-interferometric-data">A tool for fitting interferometric data<a class="anchor-link" href="#A-tool-for-fitting-interferometric-data">&#182;</a></h1><p><a href="https://github.com/l-sz/SiDE.git">https://github.com/l-sz/SiDE.git</a></p>
 
 </div>
 </div>
@@ -13312,7 +13272,7 @@ a.anchor-link {
 <h3 id="Model-parameter-file">Model parameter file<a class="anchor-link" href="#Model-parameter-file">&#182;</a></h3><p>Contains all fitted and not fitted model parameters. The not fitted parameters have the same value in all models.</p>
 <p>Example is provided in <code>examples/elias29/elias29_params.inp</code></p>
 <div class="highlight"><pre><span></span><span class="c1"># Read parameter file </span>
-<span class="n">par</span> <span class="o">=</span> <span class="n">SimpleDiskEnvFit</span><span class="o">.</span><span class="n">getParams</span><span class="p">(</span><span class="n">paramfile</span><span class="o">=</span><span class="s1">&#39;elias29_params.inp&#39;</span><span class="p">)</span>
+<span class="n">par</span> <span class="o">=</span> <span class="n">side</span><span class="o">.</span><span class="n">getParams</span><span class="p">(</span><span class="n">paramfile</span><span class="o">=</span><span class="s1">&#39;elias29_params.inp&#39;</span><span class="p">)</span>
 
 <span class="c1"># List parameter dictionary</span>
 <span class="n">par</span><span class="o">.</span><span class="n">ppar</span>
@@ -13557,7 +13517,7 @@ srun -n 80 python fit_elias29.py
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="Reading-and-plotting-data">Reading and plotting data<a class="anchor-link" href="#Reading-and-plotting-data">&#182;</a></h2><p>The following commands give examples for reading ASCII and binary format chain files to <code>emcee_chain</code> type objects.</p>
 <p>The minimum data stored in a <code>emcee_chain</code> object are the following: the chain (parameter values explored by the walkers, with dimension [nwalkers, nsteps, ndim]), logarithm of posterior probability (dimension [nwalkers, nsteps]), number of walkers (nwalkers), steps  (nsteps) and fitted parameters (ndim) and the name of the fitted parameters (dimension [ndim]).</p>
-<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">SimpleDiskEnvFit</span> <span class="kn">import</span> <span class="n">tools</span>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">side</span> <span class="kn">import</span> <span class="n">tools</span>
 
 <span class="c1"># Read ASCII data</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">read_chain_ascii</span><span class="p">(</span><span class="s1">&#39;chain.dat&#39;</span><span class="p">)</span>
@@ -13646,8 +13606,8 @@ srun -n 80 python fit_elias29.py
 <li>Still in developement (expect bugs)</li>
 </ul>
 <h2 id="Fine-tuning">Fine-tuning<a class="anchor-link" href="#Fine-tuning">&#182;</a></h2><ul>
-<li>Adding and changing model components: edit <code>SimpleDiskEnvFit/models.py</code></li>
-<li>Adding new dust optical constants: either to model folder or to <code>SimpleDiskEnvFit/lnk_files</code></li>
+<li>Adding and changing model components: edit <code>side/models.py</code></li>
+<li>Adding new dust optical constants: either to model folder or to <code>side/lnk_files</code></li>
 </ul>
 
 </div>
@@ -13684,17 +13644,30 @@ srun -n 80 python fit_elias29.py
 installes the module to ~/.local/lib/python{2.7/3.6}/site-packages directory, 
 which is usually included in the python search path.</p>
 <p>Alternatively, you may directly add the repository location to your PYTHONPATH:</p>
-<div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">PYTHONPATH</span><span class="o">=</span><span class="nv">$PYTHONPATH</span>:/path/to/your/SimpleDiskEnvFit/directory
+<div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">PYTHONPATH</span><span class="o">=</span><span class="nv">$PYTHONPATH</span>:/path/to/your/SiDE/directory
 </pre></div>
 <p>You can make this addition permanent by saving the export command to the 
 ~/.bashrc or ~/.profile files.</p>
 <p>After completing the installation step, the module should be available in python:</p>
-<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">SimpleDiskEnvFit</span>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">side</span>
 </pre></div>
-<p>See <a href="https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnvFit/blob/master/README.md#installation">readme</a> file.</p>
+<p>See <a href="https://github.com/l-sz/SiDE/blob/master/README.md#installation">readme</a> file.</p>
 
 </div>
 </div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span> 
+</pre></div>
+
+    </div>
+</div>
+</div>
+
 </div></section></section>
 </div>
 </div>

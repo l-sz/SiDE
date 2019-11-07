@@ -4,8 +4,8 @@
 # The code heavily relies on radmc3dPy package by Attila Juhasz:
 # (https://www.ast.cam.ac.uk/~juhasz/radmc3dPyDoc/index.html)
 #
-# Original SimpleDiskEnvFit source available at:
-# https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnvFit
+# Original SimpleDiskEnvFit (SiDE) source available at:
+# https://github.com/l-sz/SiDE
 #  
 # Copyright (C) 2019 Laszlo Szucs <laszlo.szucs@mpe.mpg.de>
 #
@@ -37,7 +37,7 @@ __all__ = ['radmc3dModel','getParams']
 
 global module_dir
 
-module_dir = os.path.dirname(sys.modules['SimpleDiskEnvFit'].__file__)
+module_dir = os.path.dirname(sys.modules['side'].__file__)
 
 class radmc3dModel:
     '''
@@ -109,7 +109,7 @@ class radmc3dModel:
         
         Additional files needed to create the model (e.g. dust opacity file or 
         complex index of refraction (.lnk) file) should be found in resource_dir.
-        If resource_dir is not set, then search the {SIMPLEDISKENVFIT_HOME}/lnk_files
+        If resource_dir is not set, then search the {SIDE_HOME}/lnk_files
         folder for the requested files.
         
         Parameters
@@ -124,7 +124,7 @@ class radmc3dModel:
         resource_dir : sting
                 Path (absolute or relative) to the folder containing additional 
                 files (e.g. dust opacity or lnk files) that are needed to create 
-                the model. Defaults to {SIMPLEDISKENVFIT_HOME}/lnk_files.
+                the model. Defaults to {SIDE_HOME}/lnk_files.
         idisk : bool
                 If True, then include disk in model. Default is True.
         islab : bool,
@@ -1216,7 +1216,7 @@ def getParams(paramfile=None):
     else:
         # Set radmc3dPy default
         #modpar.loadDefaults()
-        # Set SimpleDiskEnv defaults
+        # Set SiDE defaults
 
         # Radiation sources
         modpar.setPar(['pstar','[0.0, 0.0, 0.0]', 

@@ -1,8 +1,8 @@
 #
 # Tools for working with MCMC chain data.
 #
-# This file is part of the SimpleDiskEnvFit project.
-# https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnvFit
+# This file is part of the SimpleDiskEnvFit (SiDE) project.
+# https://github.com/l-sz/SiDE
 #
 # Copyright (C) 2019 Laszlo Szucs <laszlo.szucs@mpe.mpg.de>
 # Licensed under GLPv2, for more information see the LICENSE file repository.

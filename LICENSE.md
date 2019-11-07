@@ -1,6 +1,6 @@
 
- This file is part of the SimpleDisk project.
- https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnvFit
+ This file is part of the SimpleDiskEnvFit (SiDE) project.
+ https://github.com/l-sz/SiDE
  
  Copyright (C) 2019 Laszlo Szucs <laszlo.szucs@mpe.mpg.de>
  

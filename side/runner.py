@@ -4,8 +4,8 @@
 # The code heavily relies on radmc3dPy package by Attila Juhasz:
 # (https://www.ast.cam.ac.uk/~juhasz/radmc3dPyDoc/index.html)
 #
-# Original SimpleDiskEnvFit source available at:
-# https://gitlab.mpcdf.mpg.de/szucs/SimpleDiskEnvFit
+# Original SimpleDiskEnvFit (SiDE) source available at:
+# https://github.com/l-sz/SiDE
 #  
 # Copyright (C) 2019 Laszlo Szucs <laszlo.szucs@mpe.mpg.de>
 #

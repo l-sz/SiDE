@@ -1,5 +1,5 @@
-SimpleDiskEnvFit
-================
+SimpleDiskEnv (SiDE)
+====================
 
 Self-contained `radmc3dModel` with child-mode RADMC3D runner and with 
 image, visibility and $`\chi^2`$ storage.
@@ -66,7 +66,7 @@ which is usually included in the python search path.
 Alternatively, you may directly add the repository location to your `PYTHONPATH`:
 
 ```bash
-$ export PYTHONPATH=$PYTHONPATH:/path/to/your/SimpleDiskEnvFit/directory
+$ export PYTHONPATH=$PYTHONPATH:/path/to/your/SiDE/directory
 ```
 You can make this addition permanent by saving the export command to the 
 ~/.bashrc or ~/.profile files.
@@ -74,7 +74,7 @@ You can make this addition permanent by saving the export command to the
 After completing the installation step, the module should be available in python:
 
 ```python
-import SimpleDiskEnvFit
+import side
 ```
 
 Basic usage:
@@ -83,10 +83,10 @@ Basic usage:
 Load default parameter configuration (disk and envelope included, no cavity) and 
 modify the disk mass and radius and the envelope reference density.
 ```python
-import SimpleDiskEnvFit
+import side
 import numpy as np
 
-par = SimpleDiskEnvFit.getParam()
+par = side.getParam()
 
 par.setPar(['mdisk', '0.01*ms', ' Disk dust mass', 'Disk parameters'])
 par.setPar(['rdisk', '100.*au', ' Disk radius', 'Disk parameters'])
@@ -98,7 +98,7 @@ component masses, densities, etc.). Then write the model to current folder (note
 that files need to be written to hard drive before the dust temperature and 
 images are computed).
 ```
-mod = SimpleDiskEnvFit.radmc3dModel(modpar=par, main_dir='../opacities/')
+mod = side.radmc3dModel(modpar=par, main_dir='../opacities/')
 mod.infoModelParams()
 mod.write2folder()
 ```
@@ -153,7 +153,7 @@ Contents of the `examples/elias29` folder:
 The `examples/fit_elias29.py` script is tailored for fitting the complex visibility 
 data of Elias29. The script prepares the complex visibility data (`visdata`) and 
 sets the control parameters for the fitting (`kwargs`). The parameters are passed 
-to the `SimlpeDiskEnvFit.run_mcmc()` function. At least the `main_dir`, `uvdata`, 
+to the `side.run_mcmc()` function. At least the `main_dir`, `uvdata`, 
 `paramfile`, `parname`, `p_ranges` and `p0` arguments need to be set. Note that 
 the `kwargs` dictionary contains further important parameters (e.g. `dpc`, `incl`).
 If `kwargs` is not set, then default values are used. Please consult the function 
@@ -185,7 +185,7 @@ Make sure that the call to `run_mcmc()` has `use_mpi = True` and that in the eli
 script the partition, ntasks-per-node and node parameters are set correctly.
 
 The result chain is written to `examples/elias29/elias29_mcmc_save.p` python 
-pickle format and `examples/elias29/chain.dat` ASCII files. The `SimpleDiskEnvFit.tools` 
+pickle format and `examples/elias29/chain.dat` ASCII files. The `side.tools` 
 module provides functions for reading and visualizing the output (see Wiki).
 
 ### Resuming MCMC computation
@@ -205,20 +205,20 @@ run_mcmc(current_dir+'/elias29', nwalkers=40, nsteps=1000, nburnin=0, use_mpi=Tr
          resume=True, restart_file=current_dir+'/elias29/chain.dat')
 ```
 
-With these parameters `SimpleDiskEnvFit` will read in the chain file and start 
+With these parameters SiDE will read in the chain file and start 
 the new MCMC run from the last saved state of the `emcee` sampler. The chain 
 will continue with 1000 steps (i.e. 1000 times 40 models) and write the results 
 from the current run to `examples/elias29/chain_0.dat`. The results in the 
 `elias29_mcmc_save.p` pickle file will contain the chain from both the 
 first and the rerun. It is possible to read and merge multiple ASCII chain files 
-using the `SimpleDiskEnvFit.tools.emcee_chain` class.
+using the `side.tools.emcee_chain` class.
 
 **General notes**
 
 The minimally required files for the fitting are the parameter file (\*param.inp) 
 and the observational constraints (\*.txt). If the grain size distribution is 
 fitted, then a file containing the complex index of refraction need to be provided. 
-SimpleDiskEnvFit is distributed with the astronomical silicate dust model of 
+SiDE is distributed with the astronomical silicate dust model of 
 Draine & Lee (2003) and the porous silicate:carbon:ice:vacuum (1:2:3:6) dust 
 model used in Natta & Testi (2004). 
 

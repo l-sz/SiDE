@@ -33,12 +33,11 @@ from . import tools
 
 __all__ = ['run_mcmc']
 
-def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=1, nthreads_openmp=1,
-             nwalkers=40, nsteps=300, nburnin=0, use_mpi=False, loadbalance=False,
-             verbose=False, resume=False, sloppy=False, chain_file='chain.dat', 
-             restart_file='chain.dat', impar=None, parname=None, p_ranges=None, 
-             p0=None, p_form=None, p_formprior=None, p_sigma=None, debug=False, 
-             kwargs=None, dpc=1.0, incl=60.):
+def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=1, 
+             nthreads_openmp=1, nwalkers=40, nsteps=300, nburnin=0, use_mpi=False, loadbalance=False, verbose=False, resume=False, sloppy=False, 
+             chain_file='chain.dat', restart_file='chain.dat', impar=None, 
+             parname=None, p_ranges=None, p0=None, p_form=None, p_formprior=None, 
+             p_sigma=None, debug=False, kwargs=None, dpc=1.0, incl=60.):
     '''
     Computes posteriori probabilities of parametrised Class 0/I models given 
     a set of observational constraints and radiative transfer model parameters.
@@ -78,9 +77,11 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=1, nthreads
              necessary. Default is 'model_param.inp'.
     nthreads : int
              Number of threads used in multiprocessing mode. In MPI mode the 
-             parameter sets the number of OpenMP threads used by RADMC-3D and 
-             galario. nthreads should not be larger than the total number of 
-             CPU threads. Default is 1.
+             parameter is ignored. Default is 1.
+    nthreads_openmp : int
+             Number of OpenMP threads used by RADMC-3D and galario. It is used 
+             both in MPI and multiprocessing modes. nthreads_openmp should not 
+             be larger than the total number of CPU threads. Default is 1.
     nwalkers : int
              Number of walkers used. Default is 40.
     nsteps   : int
@@ -176,12 +177,10 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=1, nthreads
             os.chdir(main_dir)
             pool.wait()
             sys.exit(0)
-    
-        nthreads_openmp = nthreads
+
         nthreads = pool.size
     else:
         pool = None
-        nthreads_openmp = 1
 
     # Change to main_dir in order to find the UV obs. data files
     current_dir = os.path.realpath('.')

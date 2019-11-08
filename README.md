@@ -1,4 +1,4 @@
-SimpleDiskEnv (SiDE)
+SimpleDiskEnvFit (SiDE)
 ====================
 
 Self-contained `radmc3dModel` with child-mode RADMC3D runner and with 

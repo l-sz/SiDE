@@ -888,7 +888,15 @@ class radmc3dModel:
 
         else:
 
-            if type(uvdata) == dict:
+            # Get image wavelengths
+            wav_im = []
+            if type(self.image) is dict:
+                wav_im.append(self.image.wav[0])
+            else:
+                for im in self.image:
+                    wav_im.append(im.wav[0])
+
+            if type(uvdata) is dict:
                 uvdata = [uvdata]
 
             n_uvdata = len(uvdata)
@@ -956,8 +964,15 @@ class radmc3dModel:
                 else:
                     dDec_use = 0.0
 
-                # Use always the nth image for the nth visibility data set
-                iim = i
+                # Find the index of the image for the ith visibility data set
+                matches = [i for i, w in enumerate(wav_im) if w == wav]
+                
+                if len(matchs) == 0:
+                    raise ValueError("ERROR [{:06}]: no image found for {}th visibility dataset (lam={}))".format(self.ID, i, wav))
+                elif len(matches) > 1:
+                    print ("WARN [{:06}]: more than one image found for {}th visibility dataset (lam={})), using first occurrence!".format(self.ID, i, wav))
+                # Use first match
+                iim = matches[0]
                 
                 # Warn if the wavelength does not match
                 wav_im = self.image[iim].wav[0]

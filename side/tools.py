@@ -297,7 +297,7 @@ class emcee_chain():
         if show:
             plt.show()
         
-        return
+        return fig, ax
 
     def plot_lnprob(self, show=True, save=True, gamma=1.0, alpha_floor=0.1,
                     xlim=None, ylim=None, xscale='linear', yscale='linear',
@@ -378,7 +378,7 @@ class emcee_chain():
         if show:
             plt.show()
         
-        return
+        return fig, ax
 
     def plot_corner(self, nburnin=0, range=None, full_range=False, show=True, 
                     save=True, figname='corner.pdf', **kwargs):
@@ -607,3 +607,34 @@ def parse_karg(string_list):
         data = s.split('=')
         dic[data[0].strip()] = eval(data[1].strip())
     return dic
+
+def load_pickle(pickle_file):
+    '''
+    Try to mittigate the python 2/3 pickle file incompatibility by setting 
+    the encoding parameter for the pickle.load() function. Note that this 
+    argument is not defined in the python 2 implementation and the call will fail.
+    However, when python 2 is used then the first try should already succeed.
+    
+    When using python 3 to save data to pickle files (pickle.dump()), please used 
+    the protocol=2 argument.
+    
+    Parameters
+    ----------
+    pickle_file : str
+                File name (and path) of the pickle file to be read.
+    
+    Returns
+    -------
+    results     : tuple
+                Content of the pickle file.
+    '''
+    try:
+        with open(pickle_file, 'rb') as f:
+            pickle_data = pickle.load(f)
+    except UnicodeDecodeError as e:
+        with open(pickle_file, 'rb') as f:
+            pickle_data = pickle.load(f, encoding='latin1')
+    except Exception as e:
+        print('Unable to load data ', pickle_file, ':', e)
+        raise
+    return pickle_data

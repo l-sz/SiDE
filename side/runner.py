@@ -19,6 +19,7 @@ import subprocess
 import numpy as np
 import radmc3dPy
 import os
+import copy
 from timeit import default_timer as timer
 
 __all__ = ['radmc3dRunner']
@@ -422,11 +423,17 @@ class radmc3dRunner:
         if verbose is None:
             verbose = self.verbose
         
+        # Create local copy of args
+        largs = copy.deepcopy(args)
+        
+        # Select unique wavelengths
+        largs['wav'] = list(np.unique(largs['wav']))
+        
         if time:
             start = timer()
         
         # Compute image
-        self.runImage(**args)
+        self.runImage(**largs)
         
         # Read image
         img = self.readImage()
@@ -437,9 +444,9 @@ class radmc3dRunner:
 
         if verbose and time:
             print ('INFO [{:06}]: Image at {} micron computed in {:.2f} s!'.format(
-                            self.ID, args['wav'], dt))
+                            self.ID, largs['wav'], dt))
         elif verbose:
             print ('INFO [{:06}]: Image at {} micron computed!'.format(self.ID,
-                                                                  args['wav']))
+                                                                  largs['wav']))
 
         return img

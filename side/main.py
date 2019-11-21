@@ -765,8 +765,7 @@ class radmc3dModel:
         
         # Initialize radmc3dRunner
         self.rrun = runner.radmc3dRunner(model_dir=self.model_dir, bufsize=bufsize,
-                                         nthreads=nthreads, radmc3dexec=None, 
-                                         ID=self.ID, verbose=verbose)
+                                         radmc3dexec=None, ID=self.ID, verbose=verbose)
         
         # Compute dust temperature
         if mctherm:
@@ -787,17 +786,24 @@ class radmc3dModel:
             
             for ip in impar:
                 img = self.rrun.getImage(verbose=verbose, time=time, **ip)
-                if img.nwav == 1:
+                #
+                # Single wavelength image
+                if type(ip['wav']) not in [list, np.ndarray]:
                     self.image.append(img)
+                #
+                # Multi wavelength image
                 else:
                     # If multi wavelength image, then unpack
-                    for jp in range(img.nwav):
+                    #for jp in range(img.nwav):
+                    for ll in ip['wav']:
+                        print (ll, img.wav, np.where(img.wav == ll))
                         tmp = copy.deepcopy(img)
                         tmp.nwav = 1
                         tmp.nfreq = 1
-                        tmp.wav = np.array([img.wav[jp]])
-                        tmp.image = img.image[:,:,jp].reshape((img.nx,img.ny,1))
-                        tmp.imageJyppix = img.imageJyppix[:,:,jp].reshape((img.nx,img.ny,1))
+                        imi = np.where(img.wav == ll)
+                        tmp.wav = np.array([img.wav[imi]])
+                        tmp.image = img.image[:,:,imi].reshape((img.nx,img.ny,1))
+                        tmp.imageJyppix = img.imageJyppix[:,:,imi].reshape((img.nx,img.ny,1))
                         self.image.append(tmp)
 
         # TODO: Compute SED(s) if needed
@@ -888,15 +894,7 @@ class radmc3dModel:
 
         else:
 
-            # Get image wavelengths
-            wav_im = []
-            if type(self.image) is dict:
-                wav_im.append(self.image.wav[0])
-            else:
-                for im in self.image:
-                    wav_im.append(im.wav[0])
-
-            if type(uvdata) is dict:
+            if type(uvdata) == dict:
                 uvdata = [uvdata]
 
             n_uvdata = len(uvdata)
@@ -964,15 +962,8 @@ class radmc3dModel:
                 else:
                     dDec_use = 0.0
 
-                # Find the index of the image for the ith visibility data set
-                matches = [i for i, w in enumerate(wav_im) if w == wav]
-                
-                if len(matchs) == 0:
-                    raise ValueError("ERROR [{:06}]: no image found for {}th visibility dataset (lam={}))".format(self.ID, i, wav))
-                elif len(matches) > 1:
-                    print ("WARN [{:06}]: more than one image found for {}th visibility dataset (lam={})), using first occurrence!".format(self.ID, i, wav))
-                # Use first match
-                iim = matches[0]
+                # Use always the nth image for the nth visibility data set
+                iim = i
                 
                 # Warn if the wavelength does not match
                 wav_im = self.image[iim].wav[0]

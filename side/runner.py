@@ -22,6 +22,8 @@ import os
 import copy
 from timeit import default_timer as timer
 
+from . import tools
+
 __all__ = ['radmc3dRunner']
 
 class radmc3dRunner:
@@ -438,6 +440,10 @@ class radmc3dRunner:
         # Read image
         img = self.readImage()
 
+        # Scale up image if sizeau_ext is specified
+        if 'sizeau_ext' in largs.keys():
+            img = extendImage(img, largs['sizeau_ext'])
+
         if time:
             end = timer()
             dt = end-start
@@ -450,3 +456,51 @@ class radmc3dRunner:
                                                                   largs['wav']))
 
         return img
+
+def extendImage(img, new_sizeau=0.0):
+    '''
+    Extends image to cover a larger area. The new image conserves the original 
+    image resolution (in terms of AU/px), but it covers new_sizeau image size.
+    The original image is stored in the centre of the new image.
+    
+    Note: the image must have even number of pixels in x and y directions.
+    If the new size is smaller than the original size, then image remains 
+    unchanged.
+    '''
+    pc = 3.08572e18         # parsec [cm]
+    au = 1.49600e13         # AU [cm]
+    
+    # Images is always nx = ny
+    nx, ny = img.nx, img.ny
+    sizeau = img.sizepix_x / au * nx
+    
+    if new_sizeau > sizeau:
+        
+        pixau = sizeau / nx
+        new_npix = int(new_sizeau / pixau)
+        shape = list(img.image.shape)
+        
+        if tools.isOdd(new_npix):
+            new_npix = new_npix + 1
+            
+        # Update image properties
+        img.nx, img.ny = new_npix, new_npix
+        img.x = ((np.arange(img.nx, dtype=np.float64) + 0.5) - img.nx/2) * img.sizepix_x
+        img.y = ((np.arange(img.ny, dtype=np.float64) + 0.5) - img.ny/2) * img.sizepix_y
+        
+        shape[0], shape[1] = new_npix, new_npix
+        new_image = np.zeros(shape)
+        
+        # Index range for inserting the raytraced image
+        loc1, loc2 = new_npix//2 - 1 - nx//2, new_npix//2 - 1 + nx//2
+        new_image[loc1:loc2,loc1:loc2] = img.image[:,:]
+        
+        # Update radmc3dImage object
+        img.image = new_image
+        conv  = img.sizepix_x * img.sizepix_y / (img.dpc * pc)**2. * 1.0e23
+        img.imageJyppix = img.image * conv
+    else:
+        pass
+    
+    return img
+    

@@ -796,7 +796,6 @@ class radmc3dModel:
                     # If multi wavelength image, then unpack
                     #for jp in range(img.nwav):
                     for ll in ip['wav']:
-                        print (ll, img.wav, np.where(img.wav == ll))
                         tmp = copy.deepcopy(img)
                         tmp.nwav = 1
                         tmp.nfreq = 1

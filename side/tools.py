@@ -638,3 +638,9 @@ def load_pickle(pickle_file):
         print('Unable to load data ', pickle_file, ':', e)
         raise
     return pickle_data
+
+def isOdd(num):
+    '''
+    Returns True is num (in argment) is odd, otherwise returns False.
+    '''
+    return num % 2 != 0

@@ -1280,7 +1280,7 @@ def getParams(paramfile=None):
         modpar.setPar(['gsmin', '1.0e-5', ' Minimum grain size [cm]', 'Dust opacity'])
         modpar.setPar(['gsmax', '1.0e-5', ' Maximum grain size [cm]', 'Dust opacity'])
         modpar.setPar(['ngs', '1', ' Number of grain size bins', 'Dust opacity'])
-        modpar.setPar(['gsdist_powex', '1', ' Power law index of grain size distribution', 'Dust opacity'])
+        modpar.setPar(['gsdist_powex', '-3.5', ' Power law index of grain size distribution', 'Dust opacity'])
         modpar.setPar(['ngpop', '1', ' Number of grain populations', 'Dust opacity'])
         modpar.setPar(['ngs', '1', ' Number of grain size bins', 'Dust opacity'])
 

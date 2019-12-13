@@ -457,7 +457,7 @@ class radmc3dRunner:
 
         return img
 
-def extendImage(img, new_sizeau=0.0):
+def extendImage(img, new_sizeau_request=0.0):
     '''
     Extends image to cover a larger area. The new image conserves the original 
     image resolution (in terms of AU/px), but it covers new_sizeau image size.
@@ -466,6 +466,11 @@ def extendImage(img, new_sizeau=0.0):
     Note: the image must have even number of pixels in x and y directions.
     If the new size is smaller than the original size, then image remains 
     unchanged.
+    
+    If the new size is not an exact multiple of the original pixel size, then 
+    the new image will not have exactly the requested size (new_sizeau_request),
+    but the size of new_npix * sizepix_x, where new_npix is approximately 
+    new_size_au / sizepix_x. See the above note on the new pixel size.
     '''
     pc = 3.08572e18         # parsec [cm]
     au = 1.49600e13         # AU [cm]
@@ -474,14 +479,21 @@ def extendImage(img, new_sizeau=0.0):
     nx, ny = img.nx, img.ny
     sizeau = img.sizepix_x / au * nx
     
-    if new_sizeau > sizeau:
+    if new_sizeau_request > sizeau:
         
         pixau = sizeau / nx
-        new_npix = int(new_sizeau / pixau)
-        shape = list(img.image.shape)
+        new_npix = new_sizeau_request / pixau
         
+        if new_npix%int(new_npix) >= 0.5:
+            new_npix = int(new_npix) + 1
+        else:
+            new_npix = int(new_npix)
+        
+        # Should be round to closest even
         if tools.isOdd(new_npix):
             new_npix = new_npix + 1
+
+        shape = list(img.image.shape)
             
         # Update image properties
         img.nx, img.ny = new_npix, new_npix
@@ -492,8 +504,8 @@ def extendImage(img, new_sizeau=0.0):
         new_image = np.zeros(shape)
         
         # Index range for inserting the raytraced image
-        loc1, loc2 = new_npix//2 - 1 - nx//2, new_npix//2 - 1 + nx//2
-        new_image[loc1:loc2,loc1:loc2] = img.image[:,:]
+        loc1, loc2 = new_npix//2 - nx//2, new_npix//2 + nx//2
+        new_image[loc1:loc2,loc1:loc2,:] = img.image[:,:,:]
         
         # Update radmc3dImage object
         img.image = new_image

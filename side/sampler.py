@@ -134,12 +134,26 @@ def run_mcmc(main_dir, uvdata, paramfile='model_param.inp', nthreads=1,
     p_range  : list of lists
              Uniform prior parameter ranges. For each parameter it should contain 
              a two element list with the minimum and maximum values. Within these 
-             ranges the prior probability is 1, outside it is 0.
+             ranges the prior probability is 1, outside it is 0. Must have as 
+             many elements at p0.
              Default is None.
     p0       : list
              Initial values of the fitted parameters. Should have exactly as many 
              elements as the parname list. The p0 values should be within the 
              corresponding p_range.
+             Default is None.
+    p_form   : list
+             Sets whether p[i] is logarithmic (i.e. that val = 10**p[i]) or linear
+             (val = p[i]). Must have as many elements as p0.
+             Default is None.
+    p_formprior : list
+             Sets the functional form of the prior probability distribution. It 
+             should be set to 'normal' or 'uniform' for a Gaussian or rectangular 
+             distribution, respectively. Must have exactly as many elements as p0.
+             Default is None.
+    p_sigma  : list
+             Width of the Gaussian function. Must have exactly as many elements 
+             as p0. If p_formprior[i] is 'uniform', then p_sigma[i] is not used.
              Default is None.
     debug    : bool
              Passes debug argument to the emcee module. If set then more information 

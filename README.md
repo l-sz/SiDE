@@ -52,6 +52,8 @@ branch of RADMC-3D, but have not been released yet.
 Installation:
 ------------
 
+### General instructions
+
 Download the repository in your browser or using the git clone utility.
 
 Use Python's distutil utility and the provided setup.py script. 
@@ -77,8 +79,7 @@ After completing the installation step, the module should be available in python
 import side
 ```
 
-### Installation in an Anaconda environment
-
+### Installation in Anaconda environment
 
 Create a new anaconda environment (new_environment should be replaced by a name you like!
 ```bash

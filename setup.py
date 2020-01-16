@@ -11,8 +11,8 @@ except ImportError:
 
 setup(name='side',
       version='0.1.2',
-      install_requires=['radmc3dPy >= 0.30.2', 'corner >= 2.0.0', 'emcee == 2.2.1',
-			'uvplot >= 0.2.8'],
+      install_requires=['radmc3dPy >= 0.30.2', 'corner >= 2.0.0', 'emcee >= 2.2.1',
+			'uvplot >= 0.2.8', 'mpi4py >= 3.0.3'],
       extras_require={'galario':['galario']},
       dependency_links=['http://www.ita.uni-heidelberg.de/~dullemond/software/radmc-3d/radmc3dPyDoc/_downloads/radmc3dPy-0.30.2.tar.gz'],
       provides=['side'],

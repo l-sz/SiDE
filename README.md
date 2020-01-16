@@ -77,6 +77,58 @@ After completing the installation step, the module should be available in python
 import side
 ```
 
+###Installation in an Anaconda environment
+
+Create a new anaconda environment (new_environment should be replaced by a name you like!
+```bash
+conda create -n [new_environment] python=3.6
+```
+
+Activate the environment
+```bash
+conda activate [new_environment]
+```
+
+Add conda-forge to the software channels:
+```bash
+conda config --add channels conda-forge
+conda config --set channel_priority strict 
+```
+
+Install requirements
+```bash
+conda install galario
+conda install astropy
+conda install ipython
+conda install mpi4py
+```
+
+Download and install the program package:
+```bash
+git clone https://github.com/l-sz/SiDE.git
+
+cd SiDE
+python setup.py install --user
+cd ..
+```
+
+Try if it works:
+```bash
+ipython
+import radmc3dPy
+import side
+```
+
+Install RADMC-3D
+```bash
+wget http://www.ita.uni-heidelberg.de/~dullemond/software/radmc-3d/radmc-3d_v0.41_07.07.17.zip
+unzip radmc-3d_v0.41_07.07.17.zip
+cd radmc-3d/version_0.41/src/
+cp ../../../SiDE/radmc3d_patch/main_patch.f90 main.f90
+make
+make install
+```
+
 Basic usage:
 -----------
 

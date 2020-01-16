@@ -35,7 +35,7 @@ Requirements:
 - [uvplot](https://github.com/mtazzari/uvplot)
 - [emcee](http://dfm.io/emcee) (used for MCMC fitting)
 - [corner](https://corner.readthedocs.io)
-- mpi4py (optional, used for emcee parallelism)
+- mpi4py (used for emcee parallelism)
 
 - [RADMC3D](http://www.ita.uni-heidelberg.de/~dullemond/software/radmc-3d)
 
@@ -57,7 +57,7 @@ Download the repository in your browser or using the git clone utility.
 Use Python's distutil utility and the provided setup.py script. 
 
 ```bash
-$ python setup.py install --user
+python setup.py install --user
 ```
 
 On Linux this installs the module to ~/.local/lib/python{2.7/3.6}/site-packages directory, 
@@ -66,7 +66,7 @@ which is usually included in the python search path.
 Alternatively, you may directly add the repository location to your `PYTHONPATH`:
 
 ```bash
-$ export PYTHONPATH=$PYTHONPATH:/path/to/your/SiDE/directory
+export PYTHONPATH=$PYTHONPATH:/path/to/your/SiDE/directory
 ```
 You can make this addition permanent by saving the export command to the 
 ~/.bashrc or ~/.profile files.
@@ -77,7 +77,8 @@ After completing the installation step, the module should be available in python
 import side
 ```
 
-###Installation in an Anaconda environment
+### Installation in an Anaconda environment
+
 
 Create a new anaconda environment (new_environment should be replaced by a name you like!
 ```bash

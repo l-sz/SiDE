@@ -8,14 +8,46 @@ from side import run_mcmc
 
 if __name__ == "__main__":
     
+    # Directory of main program
+    current_dir = os.path.realpath('.')
+    
+    # Set working directory (this contains the parameter file, optical constants 
+    # file, the restart / result files and the computer models. Assumed to be 
+    # relative to current_dir.
+    work_dir = 'elias29'
+    
+    # Fiducial model parameter file name
+    paramfile = 'elias29_params.inp'
+    
+    #
+    # Interpret command line arguments (if any)
+    #
+    restart = False
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'restart':
+            restart = True
+            #
+            # Choose the most recent chain file in work_dir
+            #
+            list_of_chains = glob.glob(work_dir + '/chain*.dat')
+            if len(list_of_chains) > 0:
+                restart_file = max(list_of_chains, key=os.path.getctime)
+            else:
+                restart_file = work_dir + '/chain.dat'
+ 
+    # If second argument is set, then use it as the chain file name
+    if len(sys.argv) > 2:
+        restart_file = sys.argv[2]
+
+    
     #
     # Initialize observed visibility data
     #
     
     # Read in visibility data
-    u1, v1, Re1, Im1, w1 = np.require(np.loadtxt('elias29/Elias29uvt_270.txt', 
+    u1, v1, Re1, Im1, w1 = np.require(np.loadtxt('{}/Elias29uvt_270.txt'.format(work_dir), 
                                     unpack=True), requirements='C')
-    u2, v2, Re2, Im2, w2 = np.require(np.loadtxt('elias29/Elias29uvt_94.txt', 
+    u2, v2, Re2, Im2, w2 = np.require(np.loadtxt('{}/Elias29uvt_94.txt'.format(work_dir), 
                                     unpack=True), requirements='C')
         
     # The Elias 29 data is noisy above 50 klambda, remove these from fitting
@@ -66,24 +98,31 @@ if __name__ == "__main__":
     # initial guess for the parameters
     p0 = [-5, -20, -4., -4.]
 
+    p_form = ['log', 'log', 'log', 'log']
+    p_formprior = ['uniform', 'uniform', 'uniform', 'uniform']
+    p_sigma = [0., 0., 0., 0., 0., 0.]
 
     #
     # Run the MCMC sampler
     #
+    # Resume from restart file
+    if restart:
+        results = run_mcmc(current_dir+'/{}'.format(work_dir), visdata, 
+                        paramfile=paramfile, use_mpi=True, verbose=True, 
+                        impar=impar, parname=parname,
+                        nwalkers=100, nsteps=300, nburnin=0,
+                        p_ranges=p_ranges, p0=p0, p_form=p_form, 
+                        p_formprior=p_formprior, p_sigma=p_sigma, 
+                        kwargs=kwargs, resume=True, restart_file=restart_file)
 
-    current_dir = os.path.realpath('.')
-    results = run_mcmc(current_dir+'/elias29', visdata, paramfile='elias29_params.inp',
-                       use_mpi=True, verbose=True, impar=impar, parname=parname, 
-                       nwalkers=100, nsteps=300, nburnin=0,
-                       p_ranges=p_ranges, p0=p0, kwargs=kwargs)
-    
-    # Resume example
-    #
-    #results = run_mcmc(current_dir+'/elias29', visdata, paramfile='elias29_params.inp',
-                       #nsteps=300, nburnin=0, use_mpi=True, resume=True, verbose=True,
-                       #restart_file=current_dir+'/elias29/chain.dat',
-                       #impar=impar, parname=parname, p_ranges=p_ranges, p0=p0, 
-                       #kwargs=kwargs)
+    # Start new run
+    else:
+        results = run_mcmc(current_dir+'/{}'.format(work_dir), visdata, 
+                        paramfile=paramfile, use_mpi=True, 
+                        verbose=True, impar=impar, parname=parname, 
+                        nwalkers=100, nsteps=300, nburnin=0,
+                        p_ranges=p_ranges, p0=p0, p_form=p_form, 
+                        p_formprior=p_formprior, p_sigma=p_sigma, kwargs=kwargs)
     
     print ("Note that mass and density parameters always refer to the dust component!")
     
